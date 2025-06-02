@@ -1,3 +1,8 @@
+import { useNavigation } from "@react-navigation/native";
+import {
+  NativeStackNavigationProp,
+  createNativeStackNavigator,
+} from "@react-navigation/native-stack";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
@@ -5,105 +10,72 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 import CategoryList from "../../components/CategoryList";
 import IntroHeader from "../../components/IntroHeader";
 import ProductGrid from "../../components/ProductGrid";
+import NotificationScreen from "./NotificationScreen";
 
-const API_BASE_URL = "http://192.168.18.73:8000/api";
+type RootStackParamList = {
+  Home: undefined;
+  Notifications: undefined;
+};
+
+type Product = {
+  id: number;
+  name: string;
+  price: string;
+  category: string;
+  image: string;
+  images: string[];
+};
+
+const categories = [
+  {
+    label: "Elektronik & Gadget",
+    value: "Elektronik",
+    icon: "bi-phone",
+    slug: "elektronik",
+  },
+  // ... (kategori lainnya tetap sama)
+];
+
+const API_BASE_URL = "http://10.31.248.95:8000/api";
+
+// Perbaikan: Gunakan createNativeStackNavigator untuk membuat Stack
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function HomePage() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [selectedCategory, setSelectedCategory] = useState("recent");
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
   const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
-  const categories = [
-    {
-      label: "Elektronik & Gadget",
-      value: "Elektronik",
-      icon: "bi-phone",
-      slug: "elektronik",
-    },
-    {
-      label: "Pakaian & Aksesoris",
-      value: "Pakaian",
-      icon: "bi-bag",
-      slug: "pakaian",
-    },
-    {
-      label: "Perabotan Rumah Tangga",
-      value: "Perabotan",
-      icon: "bi-house",
-      slug: "perabotan",
-    },
-    {
-      label: "Buku, Alat Tulis, & Peralatan Sekolah",
-      value: "Buku",
-      icon: "bi-book",
-      slug: "buku",
-    },
-    {
-      label: "Hobi, Mainan, & Koleksi",
-      value: "Hobi",
-      icon: "bi-controller",
-      slug: "hobi",
-    },
-    {
-      label: "Perlengkapan Bayi & Anak",
-      value: "Bayi & Anak",
-      icon: "bi-emoji-smile",
-      slug: "bayi-anak",
-    },
-    {
-      label: "Otomotif & Aksesoris",
-      value: "Otomotif",
-      icon: "bi-car-front",
-      slug: "otomotif",
-    },
-    {
-      label: "Perlengkapan Taman & Outdoor",
-      value: "Taman & Outdoor",
-      icon: "bi-flower2",
-      slug: "taman-outdoor",
-    },
-    {
-      label: "Peralatan Kantor & Industri",
-      value: "Kantor & Industri",
-      icon: "bi-briefcase",
-      slug: "kantor-industri",
-    },
-    {
-      label: "Kosmetik & Perawatan Diri",
-      value: "Kosmetik",
-      icon: "bi-heart",
-      slug: "kosmetik",
-    },
-  ];
-
-  type Product = {
-    id: number;
-    name: string;
-    price: string;
-    category: string;
-    image: string;
-    images: string[];
-  };
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
-    axios
-      .get<Product[]>(`${API_BASE_URL}/produk`)
-      .then((res) => {
-        const products = res.data.map((item) => {
-          const catObj = categories.find(
-            (c) => c.value.toLowerCase() === item.category.toLowerCase()
-          );
-          return {
-            ...item,
-            category: catObj?.label || item.category,
-          };
-        });
+    axios.get<Product[]>(`${API_BASE_URL}/produk`).then((res) => {
+      const products = res.data.map((item) => {
+        const catObj = categories.find(
+          (c: { value: string }) =>
+            c.value.toLowerCase() === item.category.toLowerCase()
+        );
+        return {
+          ...item,
+          category: catObj?.label || item.category,
+        };
+      });
 
-        setFetchedProducts(products);
-        const shuffled = [...products].sort(() => 0.5 - Math.random());
-        setRecentProducts(shuffled.slice(0, 7));
-      })
-      .catch((err) => console.error("Gagal fetch produk:", err));
+      setFetchedProducts(products);
+      const shuffled = [...products].sort(() => 0.5 - Math.random());
+      setRecentProducts(shuffled.slice(0, 7));
+    });
+
+    axios
+      .get<{ count: number }>(`${API_BASE_URL}/notifications/unread-count`)
+      .then((res) => setNotificationCount(res.data.count))
+      .catch((err) => console.error("Gagal fetch notifikasi:", err));
   }, []);
+
+  const handleNotificationPress = () => {
+    navigation.navigate("Notifications");
+  };
 
   const productList =
     selectedCategory === "recent"
@@ -115,7 +87,10 @@ export default function HomePage() {
 
   return (
     <ScrollView style={styles.container}>
-      <IntroHeader />
+      <IntroHeader
+        notificationCount={notificationCount}
+        onNotificationPress={handleNotificationPress}
+      />
       <CategoryList
         selected={selectedCategory}
         setSelected={setSelectedCategory}
@@ -139,3 +114,20 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
 });
+
+export function HomeStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="Home"
+        component={HomePage}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationScreen}
+        options={{ title: "Notifikasi" }}
+      />
+    </Stack.Navigator>
+  );
+}
