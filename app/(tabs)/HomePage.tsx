@@ -33,10 +33,63 @@ const categories = [
     icon: "bi-phone",
     slug: "elektronik",
   },
-  // ... (kategori lainnya tetap sama)
+  {
+    label: "Pakaian & Aksesoris",
+    value: "Pakaian",
+    icon: "bi-bag",
+    slug: "pakaian",
+  },
+  {
+    label: "Perabotan Rumah Tangga",
+    value: "Perabotan",
+    icon: "bi-house",
+    slug: "perabotan",
+  },
+  {
+    label: "Buku, Alat Tulis, & Peralatan Sekolah",
+    value: "Buku",
+    icon: "bi-book",
+    slug: "buku",
+  },
+  {
+    label: "Hobi, Mainan, & Koleksi",
+    value: "Hobi",
+    icon: "bi-controller",
+    slug: "hobi",
+  },
+  {
+    label: "Perlengkapan Bayi & Anak",
+    value: "Bayi & Anak",
+    icon: "bi-emoji-smile",
+    slug: "bayi-anak",
+  },
+  {
+    label: "Otomotif & Aksesoris",
+    value: "Otomotif",
+    icon: "bi-car-front",
+    slug: "otomotif",
+  },
+  {
+    label: "Perlengkapan Taman & Outdoor",
+    value: "Taman & Outdoor",
+    icon: "bi-flower2",
+    slug: "taman-outdoor",
+  },
+  {
+    label: "Peralatan Kantor & Industri",
+    value: "Kantor & Industri",
+    icon: "bi-briefcase",
+    slug: "kantor-industri",
+  },
+  {
+    label: "Kosmetik & Perawatan Diri",
+    value: "Kosmetik",
+    icon: "bi-heart",
+    slug: "kosmetik",
+  },
 ];
 
-const API_BASE_URL = "http://10.31.248.95:8000/api";
+const API_BASE_URL = "http://192.168.155.88:8000/api";
 
 // Perbaikan: Gunakan createNativeStackNavigator untuk membuat Stack
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -64,7 +117,7 @@ export default function HomePage() {
 
       setFetchedProducts(products);
       const shuffled = [...products].sort(() => 0.5 - Math.random());
-      setRecentProducts(shuffled.slice(0, 7));
+      setRecentProducts(shuffled.slice(0, 20));
     });
 
     axios
