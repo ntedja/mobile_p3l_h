@@ -6,7 +6,7 @@ import CategoryList from "../../components/CategoryList";
 import IntroHeader from "../../components/IntroHeader";
 import ProductGrid from "../../components/ProductGrid";
 
-const API_BASE_URL = "http://192.168.18.73:8000/api";
+const API_BASE_URL = "http://10.31.248.110:8000/api";
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("recent");
