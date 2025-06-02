@@ -1,10 +1,12 @@
 import { Marquee } from "@animatereactnative/marquee";
+import { useRouter } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Colors from "../services/Colors";
 
 export default function LandingPage() {
+  const router = useRouter();
   const imageList = [
     require("./../assets/images/1.jpeg"),
     require("./../assets/images/c1.jpeg"),
@@ -92,7 +94,7 @@ export default function LandingPage() {
           ReUseMart
         </Text>
         <TouchableOpacity
-          onPress={() => console.log("Button Click")}
+          onPress={() => router.push("./login")}
           style={styles.button}
         >
           <Text
