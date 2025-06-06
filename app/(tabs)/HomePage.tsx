@@ -89,9 +89,9 @@ const categories = [
   },
 ];
 
-const API_BASE_URL = "http://192.168.155.88:8000/api";
+// **Perbaikan di sini:**
+const API_BASE_URL = "http://172.16.20.141:8000/api";
 
-// Perbaikan: Gunakan createNativeStackNavigator untuk membuat Stack
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function HomePage() {
@@ -103,23 +103,28 @@ export default function HomePage() {
   const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
-    axios.get<Product[]>(`${API_BASE_URL}/produk`).then((res) => {
-      const products = res.data.map((item) => {
-        const catObj = categories.find(
-          (c: { value: string }) =>
-            c.value.toLowerCase() === item.category.toLowerCase()
-        );
-        return {
-          ...item,
-          category: catObj?.label || item.category,
-        };
-      });
+    // Fetch semua produk
+    axios
+      .get<Product[]>(`${API_BASE_URL}/produk`)
+      .then((res) => {
+        const products = res.data.map((item) => {
+          const catObj = categories.find(
+            (c) => c.value.toLowerCase() === item.category.toLowerCase()
+          );
+          return {
+            ...item,
+            category: catObj?.label || item.category,
+          };
+        });
 
-      setFetchedProducts(products);
-      const shuffled = [...products].sort(() => 0.5 - Math.random());
-      setRecentProducts(shuffled.slice(0, 20));
-    });
+        setFetchedProducts(products);
+        // Ambil 20 produk acak untuk “Produk Terkini”
+        const shuffled = [...products].sort(() => 0.5 - Math.random());
+        setRecentProducts(shuffled.slice(0, 20));
+      })
+      .catch((err) => console.error("Gagal fetch produk:", err));
 
+    // Fetch jumlah notifikasi belum dibaca
     axios
       .get<{ count: number }>(`${API_BASE_URL}/notifications/unread-count`)
       .then((res) => setNotificationCount(res.data.count))
@@ -134,7 +139,9 @@ export default function HomePage() {
     selectedCategory === "recent"
       ? recentProducts
       : fetchedProducts.filter((p) => {
-          const category = categories.find((c) => c.slug === selectedCategory);
+          const category = categories.find(
+            (c) => c.slug === selectedCategory
+          );
           return category && p.category === category.label;
         });
 
@@ -156,18 +163,6 @@ export default function HomePage() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    backgroundColor: "#FFF7E2",
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginVertical: 12,
-  },
-});
-
 export function HomeStack() {
   return (
     <Stack.Navigator>
@@ -184,3 +179,15 @@ export function HomeStack() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    backgroundColor: "#FFF7E2",
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginVertical: 12,
+  },
+});

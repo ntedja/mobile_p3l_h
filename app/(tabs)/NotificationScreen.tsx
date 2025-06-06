@@ -1,7 +1,11 @@
+// app/(tabs)/NotificationScreen.tsx
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Divider, List } from "react-native-paper";
+import Colors from "../../services/Colors";
 
 type Notification = {
   id: number;
@@ -13,39 +17,69 @@ type Notification = {
 };
 
 export default function NotificationScreen() {
-  const API_BASE_URL = "http://192.168.155.88:8000/api";
+  const API_BASE_URL = "http://172.16.20.141:8000/api";
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Ganti dengan API endpoint notifikasi Anda
-    axios
-      .get<Notification[]>(`${API_BASE_URL}/notifications`)
-      .then((res) => {
-        setNotifications(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Gagal fetch notifikasi:", err);
-        setLoading(false);
-      });
+    loadNotifications();
   }, []);
 
-  const markAsRead = (id: number) => {
-    // Ganti dengan API untuk menandai notifikasi sebagai terbaca
-    axios
-      .patch(`${API_BASE_URL}/notifications/${id}/read`)
-      .then(() => {
-        setNotifications(
-          notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-        );
-      })
-      .catch((err) => console.error("Gagal update notifikasi:", err));
+  const loadNotifications = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      // Jika backend Anda memakai /api/notifications (bukan /user/notifications),
+      // ubah URL di bawah sesuai:
+      const url = `${API_BASE_URL}/notifications`;
+      const response = await axios.get<{
+        success: boolean;
+        data: Notification[];
+        message?: string;
+      }>(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (response.data.success && Array.isArray(response.data.data)) {
+        setNotifications(response.data.data);
+      } else {
+        console.warn("Respons notifikasi tidak seperti yang diharapkan");
+      }
+    } catch (error: any) {
+      console.error("Gagal fetch notifikasi:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (id: number) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      // Sesuaikan endpoint jika berbeda:
+      const url = `${API_BASE_URL}/notifications/${id}/read`;
+      await axios.patch(
+        url,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      console.error("Gagal update notifikasi:", err);
+    }
   };
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.center}>
         <Text>Memuat notifikasi...</Text>
       </View>
     );
@@ -53,7 +87,7 @@ export default function NotificationScreen() {
 
   if (notifications.length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={styles.center}>
         <Text>Tidak ada notifikasi</Text>
       </View>
     );
@@ -70,7 +104,9 @@ export default function NotificationScreen() {
               <List.Icon
                 {...props}
                 icon={notification.isRead ? "email-open" : "email"}
-                color={notification.isRead ? "#888" : "#3f51b5"}
+                color={
+                  notification.isRead ? "#888" : Colors.BUTTON_PRIMARY
+                }
               />
             )}
             onPress={() => markAsRead(notification.id)}
@@ -90,12 +126,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.WHITE,
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   notificationItem: {
     paddingVertical: 12,
   },
   unreadNotification: {
-    backgroundColor: "#f5f5ff",
+    backgroundColor: "#F5F5FF",
   },
 });
