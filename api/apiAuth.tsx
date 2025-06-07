@@ -10,7 +10,7 @@ interface LoginResponse {
   jabatan?: string;
 }
 
-const API_BASE_URL = "http://192.168.100.93:8000/api";
+const API_BASE_URL = "http://192.168.110.118:8000/api";
 
 const apiAuth = axios.create({
   baseURL: API_BASE_URL,

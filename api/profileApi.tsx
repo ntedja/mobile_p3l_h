@@ -1,39 +1,48 @@
-// api/profileApi.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-// Ganti dengan IP/port backend Laravel Anda
-const API_BASE_URL = "http://192.168.100.93:8000/api";
-
+const API_BASE_URL = "http://192.168.110.118:8000/api";
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
-// Saat modul pertama kali di‐import, ambil token (jika ada) dari AsyncStorage
-(async () => {
-  try {
-    const token = await AsyncStorage.getItem("token");
-    if (token) {
-      api.defaults.headers.common.Authorization = `Bearer ${token}`;
+// simpan token di variabel module-scope
+let authToken: string | null = null;
+
+// baca sekali saat modul di‐import
+AsyncStorage.getItem("token")
+  .then((tok) => {
+    authToken = tok;
+    if (tok) {
+      api.defaults.headers.common.Authorization = `Bearer ${tok}`;
       api.defaults.headers.common.Accept = "application/json";
     }
-  } catch (e) {
-    console.warn("Gagal membaca token dari AsyncStorage", e);
-  }
-})();
+  })
+  .catch((e) => console.warn("Gagal baca token", e));
 
-/**
- * Interface data profil user yang backend kembalikan:
- * {
- *   id: number,
- *   name: string,
- *   email: string,
- *   point: number
- * }
- */
+// interceptor sinkron: pakai authToken yang sudah di‐set di atas
+api.interceptors.request.use((config) => {
+  if (authToken) {
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${authToken}`,
+    };
+  }
+  return config;
+});
+
+// Generic untuk response API
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+// =====================
+//  Struktur Data API
+// =====================
+
 export interface UserProfile {
   id: number;
   name: string;
@@ -41,95 +50,136 @@ export interface UserProfile {
   point: number;
 }
 
+export interface PesananItem {
+  id: number;
+  nama_produk: string;
+  jumlah: number;
+  harga_satuan: number;
+  subtotal: number;
+}
+
+export interface Pesanan {
+  id: number;
+  kode: string;
+  tanggal: string;
+  status_transaksi: string;
+  total: number;
+  item_count: number;
+}
+
+export interface PesananDetail {
+  id: number;
+  kode: string;
+  tanggal: string;
+  status_transaksi: string;
+  total: number;
+  items: PesananItem[];
+}
+
+// =====================
+//  API Functions
+// =====================
+
 /**
- * Fetch data profil user:
+ * Ambil profil user (termasuk poin reward)
  * GET /api/user/profile
  */
 export async function fetchUserProfile(): Promise<UserProfile> {
-  const response = await api.get<UserProfile>("/user/profile");
-  return response.data;
+  const res = await api.get<UserProfile>("/user/profile");
+  return res.data;
 }
 
 /**
- * Interface TransactionDetail: satu detail baris di dalam transaksi
- * Field‐field ini wajib sama persis dengan JSON:
- * - ID_DETAIL_TRANSAKSI   (primary key detail)
- * - JUMLAH
- * - HARGA_SATUAN
- * - barang: { NAMA_BARANG: string, … }
+ * Ambil semua riwayat pesanan user
+ * GET /api/pesanan
  */
-export interface TransactionDetail {
-  ID_DETAIL_TRANSAKSI: number;
-  JUMLAH: number;
-  HARGA_SATUAN: number;
-  barang: {
-    NAMA_BARANG: string;
-    // jika butuh kolom tambahan misalnya ID_BARANG, tambahkan di sini
-  };
+export async function fetchRiwayatPesanan(): Promise<Pesanan[]> {
+  const res = await api.get<ApiResponse<any[]>>("/pesanan");
+  const p = res.data;
+  if (p.success && Array.isArray(p.data)) {
+    return p.data.map((raw: any) => ({
+      id: raw.id,
+      kode: raw.kode,
+      tanggal: raw.tgl_pesan_pembelian,
+      status_transaksi: raw.status_transaksi,
+      total: raw.total ?? 0,
+      item_count: raw.item_count ?? 0,
+    }));
+  }
+  throw new Error(p.message || "Gagal mengambil riwayat pesanan");
 }
 
 /**
- * Interface TransactionItem: satu entri transaksi (list view)
- * - ID_TRANSAKSI_PEMBELIAN
- * - TGL_PESAN_PEMBELIAN
- * - TOT_HARGA_PEMBELIAN
- * - STATUS_PEMBAYARAN
- * - detailTransaksiPembelians: TransactionDetail[]
+ * Ambil detail satu pesanan berdasarkan ID
+ * GET /api/pesanan/{id}
  */
-export interface TransactionItem {
-  ID_TRANSAKSI_PEMBELIAN: number;
-  TGL_PESAN_PEMBELIAN: string;
-  TOT_HARGA_PEMBELIAN: number;
-  STATUS_PEMBAYARAN: string;
-  detailTransaksiPembelians: TransactionDetail[];
+// src/api/profileApi.tsx
+// ... tetap sama di atas ...
+
+export interface PesananDetail {
+  id: number;
+  kode: string;
+  tanggal: string;
+  status_transaksi: string;
+  total: number;
+  alamat_pengiriman?: string;
+  metode_pembayaran?: string;
+  delivery_method?: string;
+  status_bukti_transfer?: string;
+  poin_didapat?: number;
+  poin_potongan?: number;
+  items: PesananItem[];
 }
 
-/**
- * Response ketika memanggil GET /api/user/transactions?start_date=…&end_date=…
- * Bentuknya: { data: TransactionItem[] }
- */
-export interface TransactionListResponse {
-  data: TransactionItem[];
-}
-
-/**
- * Fetch daftar transaksi user dengan rentang tanggal:
- */
-export async function fetchUserTransactions(
-  startDate: string,
-  endDate: string
-): Promise<TransactionListResponse> {
-  const response = await api.get<TransactionListResponse>(
-    "/user/transactions",
-    {
-      params: { start_date: startDate, end_date: endDate },
+export async function fetchPesananDetail(id: number): Promise<PesananDetail> {
+  const res = await api.get<ApiResponse<any>>(`/pesanan/${id}`);
+  const p = res.data;
+  if (p.success && p.data) {
+    const raw = p.data;
+    // mapping items seperti sebelumnya...
+    let items: PesananItem[] = [];
+    if (Array.isArray(raw.detail_transaksi) && raw.detail_transaksi.length) {
+      items = raw.detail_transaksi.map((d: any) => ({
+        id: d.ID_BARANG,
+        nama_produk: d.barang?.NAMA_BARANG || "-",
+        jumlah: d.JUMLAH,
+        harga_satuan: d.HARGA_SATUAN,
+        subtotal: d.JUMLAH * d.HARGA_SATUAN,
+      }));
+    } else if (raw.barang) {
+      items = [
+        {
+          id: raw.barang.id,
+          nama_produk: raw.barang.nama,
+          jumlah: 1,
+          harga_satuan: raw.barang.harga,
+          subtotal: raw.barang.harga,
+        },
+      ];
     }
-  );
-  return response.data;
+
+    return {
+      id: raw.id,
+      kode: raw.kode,
+      tanggal: raw.tgl_pesan_pembelian,      
+      status_transaksi: raw.status_transaksi,
+      total: raw.total_bayar,
+      alamat_pengiriman: raw.alamat_pengiriman,
+      metode_pembayaran: raw.metode_pembayaran,
+      delivery_method: raw.delivery_method,
+      status_bukti_transfer: raw.status_bukti_transfer,
+      poin_didapat: raw.poin_didapat,
+      poin_potongan: raw.poin_potongan,
+      items,
+    };
+  }
+  throw new Error(p.message || `Gagal mengambil detail pesanan #${id}`);
 }
 
 /**
- * Interface TransactionDetailResponse:
- * Sama seperti di atas, tetapi bisa menambahkan field lain jika endpoint detail mengembalikan tambahan.
+ * Kirim rating untuk satu barang
+ * POST /api/barang/{id}/rating
  */
-export interface TransactionDetailResponse {
-  ID_TRANSAKSI_PEMBELIAN: number;
-  TGL_PESAN_PEMBELIAN: string;
-  TOT_HARGA_PEMBELIAN: number;
-  STATUS_PEMBAYARAN: string;
-  detailTransaksiPembelians: TransactionDetail[];
-  // Tambahkan field lain jika endpoint detail mengembalikan misalnya KODE_TRANSAKSI, ALAMAT, dll.
-}
-
-/**
- * Fetch detail sebuah transaksi berdasar ID:
- * GET /api/user/transactions/{id}
- */
-export async function fetchTransactionDetail(
-  id: number
-): Promise<TransactionDetailResponse> {
-  const response = await api.get<TransactionDetailResponse>(
-    `/user/transactions/${id}`
-  );
-  return response.data;
+export async function submitRatingBarang(barangId: number, rating: number) {
+  await api.post(`/barang/${barangId}/rating`, { rating });
 }
