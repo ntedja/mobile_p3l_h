@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 import { Card, Divider } from "react-native-paper";
-import Colors from "../../services/Colors";
+import Colors from "../../../services/Colors";
 
 import {
   fetchPesananDetail,
@@ -23,9 +23,9 @@ import {
   PesananDetail,
   submitRatingBarang,
   UserProfile,
-} from "../../api/profileApi";
+} from "../../../api/pembeliApi";
 
-export default function ProfilePage() {
+export default function BuyerProfilePage() {
   // ==== Profil ====
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -280,7 +280,7 @@ export default function ProfilePage() {
         ) : profile ? (
           <>
             <Image
-              source={require("../../assets/images/avatar_placeholder.png")}
+              source={require("../../../assets/images/avatar_placeholder.png")}
               style={styles.avatar}
             />
             <View style={{ marginLeft: 12 }}>

@@ -24,24 +24,29 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrorMsg("");
     setLoading(true);
-
     try {
-      // Fungsi login(email, password) diasumsikan mengembalikan objek { token: string, user: {...} }
       const data = await login(email, password);
+      console.log("login response:", data);
 
-      // Simpan token ke AsyncStorage
-      // Misalnya data.token berisi string token JWT
       await AsyncStorage.setItem("token", data.token);
 
-      setLoading(false);
+      // perbaiki path role di sini:
+      const role = data.user?.role ?? data.role;
+      if (typeof role === "string") {
+        await AsyncStorage.setItem("role", role);
+      } else {
+        await AsyncStorage.removeItem("role");
+      }
 
-      // Setelah token tersimpan, lakukan navigasi ke tab utama
-      router.replace("/(tabs)/HomePage");
-    } catch (error: any) {
+        router.replace("/(tabs)/HomePage");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message;
+      setErrorMsg(msg);
+    } finally {
       setLoading(false);
-      setErrorMsg(error.message);
     }
-  };
+  }
+
 
   return (
     <SafeAreaView style={styles.wrapper}>

@@ -1,16 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://192.168.110.118:8000/api";
+const API_BASE_URL = "http://172.16.33.96:8000/api";
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
-// simpan token di variabel module-scope
+// simpan token di variabel module-scope (optional)
 let authToken: string | null = null;
-
-// baca sekali saat modul di‐import
 AsyncStorage.getItem("token")
   .then((tok) => {
     authToken = tok;
@@ -21,16 +19,22 @@ AsyncStorage.getItem("token")
   })
   .catch((e) => console.warn("Gagal baca token", e));
 
-// interceptor sinkron: pakai authToken yang sudah di‐set di atas
-api.interceptors.request.use((config) => {
-  if (authToken) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${authToken}`,
-    };
-  }
-  return config;
-});
+// interceptor async: baca token langsung dari AsyncStorage pada tiap request
+// → we type everything as `any` so TS won’t force you to return a fully-shaped AxiosXHRConfig
+api.interceptors.request.use(
+  async (config: any): Promise<any> => {
+    const tok = await AsyncStorage.getItem("token");
+    if (tok) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${tok}`,
+        Accept: "application/json",
+      };
+    }
+    return config;
+  },
+  (error: any) => Promise.reject(error)
+);
 
 // Generic untuk response API
 interface ApiResponse<T> {
@@ -103,7 +107,6 @@ export async function fetchRiwayatPesanan(
   start?: Date,
   end?: Date
 ): Promise<Pesanan[]> {
-  // siapkan query string jika ada filter
   const qs: string[] = [];
   if (start) {
     qs.push(`start=${start.toISOString().split("T")[0]}`);
@@ -137,7 +140,6 @@ export async function fetchPesananDetail(id: number): Promise<PesananDetail> {
   const p = res.data;
   if (p.success && p.data) {
     const raw = p.data;
-    // mapping items
     let items: PesananItem[] = [];
     if (Array.isArray(raw.detail_transaksi) && raw.detail_transaksi.length) {
       items = raw.detail_transaksi.map((d: any) => ({
