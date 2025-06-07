@@ -19,6 +19,7 @@ export default function LandingPage() {
     require("./../assets/images/5.jpeg"),
     require("./../assets/images/c5.jpeg"),
   ];
+
   return (
     <GestureHandlerRootView>
       <View>
@@ -31,7 +32,11 @@ export default function LandingPage() {
         >
           <View style={styles.imageContainer}>
             {imageList.map((image, index) => (
-              <Image source={image} style={styles.image} />
+              <Image
+                key={`marquee1-${index}`}
+                source={image}
+                style={styles.image}
+              />
             ))}
           </View>
         </Marquee>
@@ -45,7 +50,11 @@ export default function LandingPage() {
         >
           <View style={styles.imageContainer}>
             {imageList.map((image, index) => (
-              <Image source={image} style={styles.image} />
+              <Image
+                key={`marquee2-${index}`}
+                source={image}
+                style={styles.image}
+              />
             ))}
           </View>
         </Marquee>
@@ -59,7 +68,11 @@ export default function LandingPage() {
         >
           <View style={styles.imageContainer}>
             {imageList.map((image, index) => (
-              <Image source={image} style={styles.image} />
+              <Image
+                key={`marquee3-${index}`}
+                source={image}
+                style={styles.image}
+              />
             ))}
           </View>
         </Marquee>
@@ -94,7 +107,8 @@ export default function LandingPage() {
           ReUseMart
         </Text>
         <TouchableOpacity
-          onPress={() => router.push("./login")}
+          // onPress={() => router.push("./login")}
+          onPress={() => router.push("./(tabs)/HomePage")}
           style={styles.button}
         >
           <Text
