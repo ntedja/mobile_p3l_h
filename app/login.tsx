@@ -1,4 +1,6 @@
-import { useRouter } from "expo-router"; // Import useRouter
+// app/login.tsx
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,10 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { login } from "../api/apiAuth";
+import { login } from "../api/apiAuth"; // misalnya Anda punya fungsi login di apiAuth.tsx
 
 export default function LoginScreen() {
-  const router = useRouter(); // Gunakan router dari expo-router
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,9 +26,16 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
+      // Fungsi login(email, password) diasumsikan mengembalikan objek { token: string, user: {...} }
       const data = await login(email, password);
+
+      // Simpan token ke AsyncStorage
+      // Misalnya data.token berisi string token JWT
+      await AsyncStorage.setItem("token", data.token);
+
       setLoading(false);
-      // Navigasi ke halaman home/tab utama dengan router.replace
+
+      // Setelah token tersimpan, lakukan navigasi ke tab utama
       router.replace("/(tabs)/HomePage");
     } catch (error: any) {
       setLoading(false);
