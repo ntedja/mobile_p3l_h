@@ -1,3 +1,4 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -36,15 +37,15 @@ export default function ProfilePage() {
 
   // ==== Filter Tanggal ====
   const [startDate, setStartDate] = useState<Date>(new Date(0));
-  const [endDate, setEndDate]     = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker]     = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   // ==== Modal Detail ====
-  const [selectedId, setSelectedId]   = useState<number | null>(null);
-  const [detailData, setDetailData]   = useState<PesananDetail | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [detailData, setDetailData] = useState<PesananDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [ratings, setRatings]         = useState<Record<number, number>>({});
+  const [ratings, setRatings] = useState<Record<number, number>>({});
 
   useEffect(() => {
     loadProfile();
@@ -64,12 +65,12 @@ export default function ProfilePage() {
     }
   }
 
-  // Load riwayat
+  // Load riwayat dengan filter tanggal
   async function loadRiwayat() {
     setLoadingTx(true);
     setErrorTx("");
     try {
-      const list = await fetchRiwayatPesanan();
+      const list = await fetchRiwayatPesanan(startDate, endDate);
       setTransactions(list);
     } catch (e: any) {
       setErrorTx(e.message);
@@ -267,6 +268,11 @@ export default function ProfilePage() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Top Bar */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>Profile</Text>
+      </View>
+
       {/* Profil */}
       <View style={styles.profileContainer}>
         {loadingProfile ? (
@@ -289,6 +295,48 @@ export default function ProfilePage() {
           <Text>Profil tidak tersedia</Text>
         )}
       </View>
+
+      {/* Filter Periode */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setShowStartPicker(true)}
+        >
+          <Text>Dari: {startDate.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setShowEndPicker(true)}
+        >
+          <Text>Sampai: {endDate.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.applyButton} onPress={loadRiwayat}>
+          <Text style={styles.applyButtonText}>Terapkan Filter</Text>
+        </TouchableOpacity>
+      </View>
+
+      {showStartPicker && (
+        <DateTimePicker
+          value={startDate}
+          mode="date"
+          display="default"
+          onChange={(_, date) => {
+            setShowStartPicker(false);
+            date && setStartDate(date);
+          }}
+        />
+      )}
+      {showEndPicker && (
+        <DateTimePicker
+          value={endDate}
+          mode="date"
+          display="default"
+          onChange={(_, date) => {
+            setShowEndPicker(false);
+            date && setEndDate(date);
+          }}
+        />
+      )}
 
       {/* Riwayat Pesanan */}
       {loadingTx ? (
@@ -333,7 +381,20 @@ export default function ProfilePage() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, padding: 16, backgroundColor: Colors.WHITE },
+  safeArea: { flex: 1, backgroundColor: Colors.WHITE },
+
+  // Top Bar
+  headerContainer: {
+    height: 56,
+    backgroundColor: Colors.BUTTON_PRIMARY,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    color: Colors.WHITE,
+    fontSize: 20,
+    fontWeight: "700",
+  },
 
   profileContainer: {
     flexDirection: "row",
@@ -342,17 +403,44 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     elevation: 3,
+    margin: 16,
   },
   avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.GRAY },
   nameText: { fontSize: 18, fontWeight: "700", color: Colors.TEXT_DARK },
   emailText: { fontSize: 14, color: Colors.GRAY, marginTop: 2 },
   pointText: { fontSize: 14, color: Colors.TEXT_DARK, marginTop: 4 },
 
+  filterContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
+  dateButton: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: Colors.GRAY,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  applyButton: {
+    backgroundColor: Colors.BUTTON_PRIMARY,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  applyButtonText: {
+    color: Colors.WHITE,
+    fontWeight: "600",
+  },
+
   txCard: {
     borderRadius: 12,
     backgroundColor: Colors.WHITE,
     elevation: 2,
     padding: 12,
+    marginHorizontal: 16,
   },
   txHeader: { flexDirection: "row", justifyContent: "space-between" },
   firstItemName: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },

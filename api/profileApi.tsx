@@ -73,6 +73,12 @@ export interface PesananDetail {
   tanggal: string;
   status_transaksi: string;
   total: number;
+  alamat_pengiriman?: string;
+  metode_pembayaran?: string;
+  delivery_method?: string;
+  status_bukti_transfer?: string;
+  poin_didapat?: number;
+  poin_potongan?: number;
   items: PesananItem[];
 }
 
@@ -90,11 +96,24 @@ export async function fetchUserProfile(): Promise<UserProfile> {
 }
 
 /**
- * Ambil semua riwayat pesanan user
- * GET /api/pesanan
+ * Ambil riwayat pesanan user di antara dua tanggal (opsional)
+ * GET /api/pesanan?start=YYYY-MM-DD&end=YYYY-MM-DD
  */
-export async function fetchRiwayatPesanan(): Promise<Pesanan[]> {
-  const res = await api.get<ApiResponse<any[]>>("/pesanan");
+export async function fetchRiwayatPesanan(
+  start?: Date,
+  end?: Date
+): Promise<Pesanan[]> {
+  // siapkan query string jika ada filter
+  const qs: string[] = [];
+  if (start) {
+    qs.push(`start=${start.toISOString().split("T")[0]}`);
+  }
+  if (end) {
+    qs.push(`end=${end.toISOString().split("T")[0]}`);
+  }
+  const query = qs.length ? `?${qs.join("&")}` : "";
+
+  const res = await api.get<ApiResponse<any[]>>(`/pesanan${query}`);
   const p = res.data;
   if (p.success && Array.isArray(p.data)) {
     return p.data.map((raw: any) => ({
@@ -113,30 +132,12 @@ export async function fetchRiwayatPesanan(): Promise<Pesanan[]> {
  * Ambil detail satu pesanan berdasarkan ID
  * GET /api/pesanan/{id}
  */
-// src/api/profileApi.tsx
-// ... tetap sama di atas ...
-
-export interface PesananDetail {
-  id: number;
-  kode: string;
-  tanggal: string;
-  status_transaksi: string;
-  total: number;
-  alamat_pengiriman?: string;
-  metode_pembayaran?: string;
-  delivery_method?: string;
-  status_bukti_transfer?: string;
-  poin_didapat?: number;
-  poin_potongan?: number;
-  items: PesananItem[];
-}
-
 export async function fetchPesananDetail(id: number): Promise<PesananDetail> {
   const res = await api.get<ApiResponse<any>>(`/pesanan/${id}`);
   const p = res.data;
   if (p.success && p.data) {
     const raw = p.data;
-    // mapping items seperti sebelumnya...
+    // mapping items
     let items: PesananItem[] = [];
     if (Array.isArray(raw.detail_transaksi) && raw.detail_transaksi.length) {
       items = raw.detail_transaksi.map((d: any) => ({
@@ -161,7 +162,7 @@ export async function fetchPesananDetail(id: number): Promise<PesananDetail> {
     return {
       id: raw.id,
       kode: raw.kode,
-      tanggal: raw.tgl_pesan_pembelian,      
+      tanggal: raw.tgl_pesan_pembelian,
       status_transaksi: raw.status_transaksi,
       total: raw.total_bayar,
       alamat_pengiriman: raw.alamat_pengiriman,
@@ -180,6 +181,9 @@ export async function fetchPesananDetail(id: number): Promise<PesananDetail> {
  * Kirim rating untuk satu barang
  * POST /api/barang/{id}/rating
  */
-export async function submitRatingBarang(barangId: number, rating: number) {
+export async function submitRatingBarang(
+  barangId: number,
+  rating: number
+) {
   await api.post(`/barang/${barangId}/rating`, { rating });
 }
