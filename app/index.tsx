@@ -6,7 +6,7 @@ import { StyleSheet, View } from "react-native";
 export default function Index() {
   return (
     <View style={styles.center}>
-      <Redirect href="/Onboarding1" />
+      <Redirect href="./Onboarding1" />
     </View>
   );
 }

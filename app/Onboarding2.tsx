@@ -2,12 +2,12 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Colors from "../services/Colors";
 
@@ -15,7 +15,9 @@ export default function Onboarding2() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors.ONBOARD2_BG }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: Colors.ONBOARD2_BG }]}
+    >
       <View style={styles.imageWrapper}>
         <Image
           source={require("../assets/images/onboarding2.png")}
@@ -27,7 +29,8 @@ export default function Onboarding2() {
       <View style={styles.textWrapper}>
         <Text style={styles.heading}>Jual Barang Bekas Tanpa Ribet</Text>
         <Text style={styles.subtext}>
-          Titipkan barangmu ke ReUseMart, biar tim kami yang urus penjualan. Aman, praktis, tanpa repot!
+          Titipkan barangmu ke ReUseMart, biar tim kami yang urus penjualan.
+          Aman, praktis, tanpa repot!
         </Text>
       </View>
 
@@ -43,14 +46,21 @@ export default function Onboarding2() {
           style={[styles.navButton, { borderColor: Colors.TEXT_DARK }]}
           onPress={() => router.back()}
         >
-          <Text style={[styles.navButtonText, { color: Colors.TEXT_DARK }]}>← Back</Text>
+          <Text style={[styles.navButtonText, { color: Colors.TEXT_DARK }]}>
+            ← Back
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navButton, { backgroundColor: Colors.BUTTON_SECONDARY }]}
-          onPress={() => router.push("/Onboarding3")}
+          style={[
+            styles.navButton,
+            { backgroundColor: Colors.BUTTON_SECONDARY },
+          ]}
+          onPress={() => router.push("./Onboarding3")}
         >
-          <Text style={[styles.navButtonText, { color: Colors.TEXT_LIGHT }]}>Next →</Text>
+          <Text style={[styles.navButtonText, { color: Colors.TEXT_LIGHT }]}>
+            Next →
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
