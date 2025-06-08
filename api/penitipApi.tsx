@@ -32,8 +32,8 @@ interface ApiResponse<T> {
 
 /** Profil Penitip */
 export interface PenitipProfile {
-  id: number;    // ID_PENITIP
-  name: string;  // NAMA_PENITIP
+  id: number; // ID_PENITIP
+  name: string; // NAMA_PENITIP
   email: string; // EMAIL_PENITIP
   saldo: number; // SALDO_PENITIP
   point: number; // POINT_LOYALITAS_PENITIP
@@ -41,13 +41,14 @@ export interface PenitipProfile {
 
 /** Satu record riwayat titipan */
 export interface Titipan {
-  id: number;       // ID_TRANSAKSI_PENITIPAN
-  kode: string;     // NO_NOTA_TRANSAKSI_TITIPAN
-  tanggal: string;  // TGL_MASUK_TITIPAN
-  status: string;   // “Masuk” atau “Keluar”
-  jumlah: number;   // jumlah barang
-  nilai: number;    // nilai total titipan
-  items: {          // detail tiap barang
+  id: number; // ID_TRANSAKSI_PENITIPAN
+  kode: string; // NO_NOTA_TRANSAKSI_TITIPAN
+  tanggal: string; // TGL_MASUK_TITIPAN
+  status: string; // “Masuk” atau “Keluar”
+  jumlah: number; // jumlah barang
+  nilai: number; // nilai total titipan
+  items: {
+    // detail tiap barang
     id: number;
     nama: string;
     jumlah: number;
@@ -61,14 +62,16 @@ export interface Titipan {
  */
 export async function fetchPenitipProfile(): Promise<PenitipProfile> {
   const res = await api.get<ApiResponse<any>>("/penitip/me");
+  console.log("DEBUG /penitip/me:", res.data);
+
   if (res.data.success) {
     const raw = res.data.data;
     return {
-      id: raw.ID_PENITIP,
-      name: raw.NAMA_PENITIP,
-      email: raw.EMAIL_PENITIP,
-      saldo: raw.SALDO_PENITIP ?? 0,
-      point: raw.POINT_LOYALITAS_PENITIP ?? 0,
+      id: raw.id,
+      name: raw.name,
+      email: raw.email,
+      saldo: raw.saldo ?? 0,
+      point: raw.point ?? 0,
     };
   }
   throw new Error(res.data.message || "Gagal mengambil profil Penitip");
@@ -83,12 +86,12 @@ export async function fetchRiwayatTitipan(
   to: Date
 ): Promise<Titipan[]> {
   const start = from.toISOString().slice(0, 10);
-  const end   = to.toISOString().slice(0, 10);
+  const end = to.toISOString().slice(0, 10);
   const res = await api.get<ApiResponse<any[]>>(
     `/penitip/me/transactions?start=${start}&end=${end}`
   );
   if (res.data.success && Array.isArray(res.data.data)) {
-    return res.data.data.map(raw => ({
+    return res.data.data.map((raw) => ({
       id: raw.ID_TRANSAKSI_PENITIPAN,
       kode: raw.NO_NOTA_TRANSAKSI_TITIPAN,
       tanggal: raw.TGL_MASUK_TITIPAN,
