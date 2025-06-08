@@ -90,7 +90,7 @@ const categories = [
 ];
 
 // **Perbaikan di sini:**
-const API_BASE_URL = "http://192.168.100.93:8000/api";
+const API_BASE_URL = "http://172.16.33.96:8000/api";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
