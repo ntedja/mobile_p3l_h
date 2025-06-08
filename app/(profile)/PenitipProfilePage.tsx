@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { Card, Divider } from "react-native-paper";
 import {
@@ -15,8 +15,8 @@ import {
   fetchRiwayatTitipan,
   PenitipProfile,
   Titipan,
-} from "../../../api/penitipApi";
-import Colors from "../../../services/Colors";
+} from "../../api/penitipApi";
+import Colors from "../../services/Colors";
 
 export default function PenitipProfilePage() {
   const [profile, setProfile] = useState<PenitipProfile | null>(null);
@@ -79,7 +79,11 @@ export default function PenitipProfilePage() {
         {item.items.map((it) => (
           <View
             key={it.id}
-            style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginTop: 4,
+            }}
           >
             <Text style={{ fontWeight: "600" }}>{it.nama}</Text>
             <Text>
@@ -127,10 +131,7 @@ export default function PenitipProfilePage() {
         >
           <Text>Sampai: {endDate.toLocaleDateString()}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.applyButton}
-          onPress={loadTitipan}
-        >
+        <TouchableOpacity style={styles.applyButton} onPress={loadTitipan}>
           <Text style={styles.applyButtonText}>Terapkan</Text>
         </TouchableOpacity>
       </View>

@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://172.16.33.96:8000/api";
+const API_BASE_URL = "http://172.16.37.21:8000/api";
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
@@ -32,8 +32,8 @@ interface ApiResponse<T> {
 
 /** Profil Penitip */
 export interface PenitipProfile {
-  id: number;    // ID_PENITIP
-  name: string;  // NAMA_PENITIP
+  id: number; // ID_PENITIP
+  name: string; // NAMA_PENITIP
   email: string; // EMAIL_PENITIP
   saldo: number; // SALDO_PENITIP
   point: number; // POINT_LOYALITAS_PENITIP
@@ -41,13 +41,14 @@ export interface PenitipProfile {
 
 /** Satu record riwayat titipan */
 export interface Titipan {
-  id: number;       // ID_TRANSAKSI_PENITIPAN
-  kode: string;     // NO_NOTA_TRANSAKSI_TITIPAN
-  tanggal: string;  // TGL_MASUK_TITIPAN
-  status: string;   // “Masuk” atau “Keluar”
-  jumlah: number;   // jumlah barang
-  nilai: number;    // nilai total titipan
-  items: {          // detail tiap barang
+  id: number; // ID_TRANSAKSI_PENITIPAN
+  kode: string; // NO_NOTA_TRANSAKSI_TITIPAN
+  tanggal: string; // TGL_MASUK_TITIPAN
+  status: string; // “Masuk” atau “Keluar”
+  jumlah: number; // jumlah barang
+  nilai: number; // nilai total titipan
+  items: {
+    // detail tiap barang
     id: number;
     nama: string;
     jumlah: number;
@@ -83,12 +84,12 @@ export async function fetchRiwayatTitipan(
   to: Date
 ): Promise<Titipan[]> {
   const start = from.toISOString().slice(0, 10);
-  const end   = to.toISOString().slice(0, 10);
+  const end = to.toISOString().slice(0, 10);
   const res = await api.get<ApiResponse<any[]>>(
     `/penitip/me/transactions?start=${start}&end=${end}`
   );
   if (res.data.success && Array.isArray(res.data.data)) {
-    return res.data.data.map(raw => ({
+    return res.data.data.map((raw) => ({
       id: raw.ID_TRANSAKSI_PENITIPAN,
       kode: raw.NO_NOTA_TRANSAKSI_TITIPAN,
       tanggal: raw.TGL_MASUK_TITIPAN,

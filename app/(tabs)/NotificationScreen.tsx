@@ -17,7 +17,7 @@ type Notification = {
 };
 
 export default function NotificationScreen() {
-  const API_BASE_URL = "http://172.16.33.96:8000/api";
+  const API_BASE_URL = "http://172.16.37.21:8000/api";
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -104,9 +104,7 @@ export default function NotificationScreen() {
               <List.Icon
                 {...props}
                 icon={notification.isRead ? "email-open" : "email"}
-                color={
-                  notification.isRead ? "#888" : Colors.BUTTON_PRIMARY
-                }
+                color={notification.isRead ? "#888" : Colors.BUTTON_PRIMARY}
               />
             )}
             onPress={() => markAsRead(notification.id)}

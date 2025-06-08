@@ -10,10 +10,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { Card, Divider } from "react-native-paper";
-import Colors from "../../../services/Colors";
+import Colors from "../../services/Colors";
 
 import {
   fetchPesananDetail,
@@ -23,7 +23,7 @@ import {
   PesananDetail,
   submitRatingBarang,
   UserProfile,
-} from "../../../api/pembeliApi";
+} from "../../api/pembeliApi";
 
 export default function BuyerProfilePage() {
   // ==== Profil ====
@@ -124,9 +124,7 @@ export default function BuyerProfilePage() {
             <Text style={styles.firstItemName}>{item.kode}</Text>
             <Text>{new Date(item.tanggal).toLocaleDateString()}</Text>
           </View>
-          <Text style={styles.txTotal}>
-            Rp{item.total.toLocaleString()}
-          </Text>
+          <Text style={styles.txTotal}>Rp{item.total.toLocaleString()}</Text>
         </View>
         <Text>Status: {item.status_transaksi}</Text>
         <Divider style={{ marginVertical: 8 }} />
@@ -158,9 +156,7 @@ export default function BuyerProfilePage() {
     return (
       <>
         {/* Header Pesanan */}
-        <Text style={styles.modalTitle}>
-          Detail Pesanan #{detailData.id}
-        </Text>
+        <Text style={styles.modalTitle}>Detail Pesanan #{detailData.id}</Text>
         <Divider style={{ marginVertical: 8 }} />
 
         <View style={styles.section}>
@@ -168,14 +164,10 @@ export default function BuyerProfilePage() {
           <Text style={styles.value}>{detailData.kode}</Text>
 
           <Text style={styles.label}>Tanggal Pesanan:</Text>
-          <Text style={styles.value}>
-            {detailData.tanggal || "-"}
-          </Text>
+          <Text style={styles.value}>{detailData.tanggal || "-"}</Text>
 
           <Text style={styles.label}>Status:</Text>
-          <Text style={styles.value}>
-            {detailData.status_transaksi}
-          </Text>
+          <Text style={styles.value}>{detailData.status_transaksi}</Text>
 
           <Text style={styles.label}>Total Harga:</Text>
           <Text style={styles.value}>
@@ -197,9 +189,7 @@ export default function BuyerProfilePage() {
 
         {/* Status & Poin */}
         <Divider style={{ marginVertical: 8 }} />
-        <Text style={styles.sectionTitle}>
-          Status Pembayaran & Poin
-        </Text>
+        <Text style={styles.sectionTitle}>Status Pembayaran & Poin</Text>
         <View style={styles.section}>
           <Text style={styles.label}>Status Bukti Transfer:</Text>
           <Text style={styles.value}>
@@ -207,14 +197,10 @@ export default function BuyerProfilePage() {
           </Text>
 
           <Text style={styles.label}>Poin Didapat:</Text>
-          <Text style={styles.value}>
-            {detailData.poin_didapat ?? 0}
-          </Text>
+          <Text style={styles.value}>{detailData.poin_didapat ?? 0}</Text>
 
           <Text style={styles.label}>Poin Potongan:</Text>
-          <Text style={styles.value}>
-            {detailData.poin_potongan ?? 0}
-          </Text>
+          <Text style={styles.value}>{detailData.poin_potongan ?? 0}</Text>
         </View>
 
         {/* Daftar Barang */}
@@ -231,12 +217,10 @@ export default function BuyerProfilePage() {
                   </Text>
                 </View>
                 <View style={styles.ratingRow}>
-                  {[1,2,3,4,5].map((s) => (
+                  {[1, 2, 3, 4, 5].map((s) => (
                     <TouchableOpacity
                       key={s}
-                      onPress={() =>
-                        setRatings((p) => ({ ...p, [d.id]: s }))
-                      }
+                      onPress={() => setRatings((p) => ({ ...p, [d.id]: s }))}
                     >
                       <Text style={{ fontSize: 20 }}>
                         {s <= cur ? "★" : "☆"}
@@ -258,9 +242,7 @@ export default function BuyerProfilePage() {
           style={styles.filterButton}
           onPress={handleSubmitRatings}
         >
-          <Text style={styles.filterButtonText}>
-            Kirim Rating
-          </Text>
+          <Text style={styles.filterButtonText}>Kirim Rating</Text>
         </TouchableOpacity>
       </>
     );
@@ -280,15 +262,13 @@ export default function BuyerProfilePage() {
         ) : profile ? (
           <>
             <Image
-              source={require("../../../assets/images/avatar_placeholder.png")}
+              source={require("../../assets/images/avatar_placeholder.png")}
               style={styles.avatar}
             />
             <View style={{ marginLeft: 12 }}>
               <Text style={styles.nameText}>{profile.name}</Text>
               <Text style={styles.emailText}>{profile.email}</Text>
-              <Text style={styles.pointText}>
-                Poin Reward: {profile.point}
-              </Text>
+              <Text style={styles.pointText}>Poin Reward: {profile.point}</Text>
             </View>
           </>
         ) : (
@@ -342,9 +322,7 @@ export default function BuyerProfilePage() {
       {loadingTx ? (
         <ActivityIndicator size="large" color={Colors.BUTTON_PRIMARY} />
       ) : errorTx ? (
-        <Text style={{ color: "red", textAlign: "center" }}>
-          {errorTx}
-        </Text>
+        <Text style={{ color: "red", textAlign: "center" }}>{errorTx}</Text>
       ) : (
         <FlatList
           data={transactions}
@@ -405,7 +383,12 @@ const styles = StyleSheet.create({
     elevation: 3,
     margin: 16,
   },
-  avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.GRAY },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.GRAY,
+  },
   nameText: { fontSize: 18, fontWeight: "700", color: Colors.TEXT_DARK },
   emailText: { fontSize: 14, color: Colors.GRAY, marginTop: 2 },
   pointText: { fontSize: 14, color: Colors.TEXT_DARK, marginTop: 4 },

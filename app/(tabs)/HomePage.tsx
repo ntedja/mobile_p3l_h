@@ -90,7 +90,7 @@ const categories = [
 ];
 
 // **Perbaikan di sini:**
-const API_BASE_URL = "http://172.16.33.96:8000/api";
+const API_BASE_URL = "http://172.16.37.21:8000/api";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -139,9 +139,7 @@ export default function HomePage() {
     selectedCategory === "recent"
       ? recentProducts
       : fetchedProducts.filter((p) => {
-          const category = categories.find(
-            (c) => c.slug === selectedCategory
-          );
+          const category = categories.find((c) => c.slug === selectedCategory);
           return category && p.category === category.label;
         });
 
