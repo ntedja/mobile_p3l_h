@@ -130,7 +130,6 @@ export default function BuyerProfilePage() {
         </View>
         <Text>Status: {item.status_transaksi}</Text>
         <Divider style={{ marginVertical: 8 }} />
-        <Text>Jumlah Item: {item.item_count}</Text>
         <TouchableOpacity
           style={styles.detailButton}
           onPress={() => openDetailModal(item.id)}
