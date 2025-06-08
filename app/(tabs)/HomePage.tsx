@@ -11,13 +11,16 @@ import CategoryList from "../../components/CategoryList";
 import IntroHeader from "../../components/IntroHeader";
 import ProductGrid from "../../components/ProductGrid";
 import NotificationScreen from "./NotificationScreen";
+import ProductDetailScreen from "./ProductDetailScreen";
 
 type RootStackParamList = {
   Home: undefined;
   Notifications: undefined;
+  ProductDetail: { productId: number };
 };
 
-type Product = {
+// Export the Product type
+export type Product = {
   id: number;
   name: string;
   price: string;
@@ -36,18 +39,21 @@ const categories = [
   // ... (kategori lainnya tetap sama)
 ];
 
-const API_BASE_URL = "http://10.31.248.95:8000/api";
+const API_BASE_URL = "http://172.16.36.88:8000/api";
 
-// Perbaikan: Gunakan createNativeStackNavigator untuk membuat Stack
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function HomePage() {
+function HomePage() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [selectedCategory, setSelectedCategory] = useState("recent");
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
   const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
   const [notificationCount, setNotificationCount] = useState(0);
+
+  const handleProductPress = (productId: number) => {
+    navigation.navigate("ProductDetail", { productId });
+  };
 
   useEffect(() => {
     axios.get<Product[]>(`${API_BASE_URL}/produk`).then((res) => {
@@ -98,7 +104,7 @@ export default function HomePage() {
       <Text style={styles.title}>
         {selectedCategory === "recent" ? "Produk Terkini" : selectedCategory}
       </Text>
-      <ProductGrid products={productList} />
+      <ProductGrid products={productList} onProductPress={handleProductPress} />
     </ScrollView>
   );
 }
@@ -128,6 +134,13 @@ export function HomeStack() {
         component={NotificationScreen}
         options={{ title: "Notifikasi" }}
       />
+      <Stack.Screen
+        name="ProductDetail"
+        component={ProductDetailScreen}
+        options={{ title: "Detail Produk" }}
+      />
     </Stack.Navigator>
   );
 }
+
+export default HomePage;
