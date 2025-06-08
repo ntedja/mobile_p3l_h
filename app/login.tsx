@@ -1,4 +1,6 @@
-import { useRouter } from "expo-router"; // Import useRouter
+// app/login.tsx
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,10 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { login } from "../api/apiAuth";
+import { login } from "../api/apiAuth"; // misalnya Anda punya fungsi login di apiAuth.tsx
 
 export default function LoginScreen() {
-  const router = useRouter(); // Gunakan router dari expo-router
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,17 +24,29 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrorMsg("");
     setLoading(true);
-
     try {
       const data = await login(email, password);
+      console.log("login response:", data);
+
+      await AsyncStorage.setItem("token", data.token);
+
+      // perbaiki path role di sini:
+      const role = data.user?.role ?? data.role;
+      if (typeof role === "string") {
+        await AsyncStorage.setItem("role", role);
+      } else {
+        await AsyncStorage.removeItem("role");
+      }
+
+        router.replace("/(tabs)/HomePage");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message;
+      setErrorMsg(msg);
+    } finally {
       setLoading(false);
-      // Navigasi ke halaman home/tab utama dengan router.replace
-      router.replace("/(tabs)/HomePage");
-    } catch (error: any) {
-      setLoading(false);
-      setErrorMsg(error.message);
     }
-  };
+  }
+
 
   return (
     <SafeAreaView style={styles.wrapper}>
