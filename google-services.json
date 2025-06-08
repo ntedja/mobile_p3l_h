@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "684571657688",
+    "project_id": "p3l-reusemart-579d1",
+    "storage_bucket": "p3l-reusemart-579d1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:684571657688:android:66fdcab534c01852a35ead",
+        "android_client_info": {
+          "package_name": "com.p3l.reactnative"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCvayYU9tVQr8tQKjihOANFi5HSx4G2qvw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

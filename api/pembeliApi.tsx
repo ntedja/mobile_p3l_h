@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://172.16.33.96:8000/api";
+const API_BASE_URL = "http://172.16.37.21:8000/api";
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
@@ -183,9 +183,6 @@ export async function fetchPesananDetail(id: number): Promise<PesananDetail> {
  * Kirim rating untuk satu barang
  * POST /api/barang/{id}/rating
  */
-export async function submitRatingBarang(
-  barangId: number,
-  rating: number
-) {
+export async function submitRatingBarang(barangId: number, rating: number) {
   await api.post(`/barang/${barangId}/rating`, { rating });
 }

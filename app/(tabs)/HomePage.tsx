@@ -30,13 +30,70 @@ export type Product = {
   images: string[];
 };
 
-type TopSeller = {
-  penitip_id: number;
-  penitip_name: string;
-  from: string;
-  to: string;
-};
+const categories = [
+  {
+    label: "Elektronik & Gadget",
+    value: "Elektronik",
+    icon: "bi-phone",
+    slug: "elektronik",
+  },
+  {
+    label: "Pakaian & Aksesoris",
+    value: "Pakaian",
+    icon: "bi-bag",
+    slug: "pakaian",
+  },
+  {
+    label: "Perabotan Rumah Tangga",
+    value: "Perabotan",
+    icon: "bi-house",
+    slug: "perabotan",
+  },
+  {
+    label: "Buku, Alat Tulis, & Peralatan Sekolah",
+    value: "Buku",
+    icon: "bi-book",
+    slug: "buku",
+  },
+  {
+    label: "Hobi, Mainan, & Koleksi",
+    value: "Hobi",
+    icon: "bi-controller",
+    slug: "hobi",
+  },
+  {
+    label: "Perlengkapan Bayi & Anak",
+    value: "Bayi & Anak",
+    icon: "bi-emoji-smile",
+    slug: "bayi-anak",
+  },
+  {
+    label: "Otomotif & Aksesoris",
+    value: "Otomotif",
+    icon: "bi-car-front",
+    slug: "otomotif",
+  },
+  {
+    label: "Perlengkapan Taman & Outdoor",
+    value: "Taman & Outdoor",
+    icon: "bi-flower2",
+    slug: "taman-outdoor",
+  },
+  {
+    label: "Peralatan Kantor & Industri",
+    value: "Kantor & Industri",
+    icon: "bi-briefcase",
+    slug: "kantor-industri",
+  },
+  {
+    label: "Kosmetik & Perawatan Diri",
+    value: "Kosmetik",
+    icon: "bi-heart",
+    slug: "kosmetik",
+  },
+];
 
+// **Perbaikan di sini:**
 const API_BASE_URL = "http://172.16.36.88:8000/api";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -119,7 +176,10 @@ function HomePage() {
   const productList =
     selectedCategory === "recent"
       ? recentProducts
-      : fetchedProducts.filter((p) => p.category === selectedCategory);
+      : fetchedProducts.filter((p) => {
+          const category = categories.find((c) => c.slug === selectedCategory);
+          return category && p.category === category.label;
+        });
 
   return (
     <ScrollView style={styles.container}>
