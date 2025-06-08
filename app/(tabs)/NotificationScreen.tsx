@@ -104,9 +104,7 @@ export default function NotificationScreen() {
               <List.Icon
                 {...props}
                 icon={notification.isRead ? "email-open" : "email"}
-                color={
-                  notification.isRead ? "#888" : Colors.BUTTON_PRIMARY
-                }
+                color={notification.isRead ? "#888" : Colors.BUTTON_PRIMARY}
               />
             )}
             onPress={() => markAsRead(notification.id)}
