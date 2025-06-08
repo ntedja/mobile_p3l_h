@@ -3,19 +3,18 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Button,
   FlatList,
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { Card, Divider } from "react-native-paper";
 import {
   fetchKurirHistory,
+  fetchKurirHistorySelesai,
   fetchKurirProfile,
-  KurirProfile,
-  TugasPengiriman,
   updateStatusPengiriman,
 } from "../../api/kurirApi";
 import Colors from "../../services/Colors";
@@ -25,26 +24,57 @@ export default function KurirProfilePage() {
   const [tugas, setTugas] = useState<TugasPengiriman[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [tugasSelesai, setTugasSelesai] = useState<TugasPengiriman[]>([]);
 
   useEffect(() => {
-    loadData();
+    loadProfile();
+    loadTugas();
+    loadTugasSelesai();
   }, []);
 
-  const loadData = async () => {
+  const loadProfile = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem("auth_token");
-      if (!token) throw new Error("Token tidak ditemukan");
-
       const idKurirString = await AsyncStorage.getItem("pegawai_id");
       if (!idKurirString) throw new Error("ID pegawai tidak ditemukan");
       const idKurir = parseInt(idKurirString, 10);
 
-      const profileData = await fetchKurirProfile(idKurir, token);
+      const profileData = await fetchKurirProfile(idKurir);
       setProfile(profileData);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const tugasData = await fetchKurirHistory(idKurir, token);
+  const loadTugas = async () => {
+    setLoading(true);
+    try {
+      const idKurirString = await AsyncStorage.getItem("pegawai_id");
+      if (!idKurirString) throw new Error("ID pegawai tidak ditemukan");
+      const idKurir = parseInt(idKurirString, 10);
+
+      const tugasData = await fetchKurirHistory(idKurir); // Dikirim
       setTugas(tugasData);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTugasSelesai = async () => {
+    setLoading(true);
+    try {
+      const idKurirString = await AsyncStorage.getItem("pegawai_id");
+      if (!idKurirString) throw new Error("ID pegawai tidak ditemukan");
+      const idKurir = parseInt(idKurirString, 10);
+
+      const tugasData = await fetchKurirHistorySelesai(idKurir); // Selesai
+      setTugasSelesai(tugasData);
     } catch (err: any) {
       console.error(err);
       setError(err.message);
@@ -56,20 +86,18 @@ export default function KurirProfilePage() {
   const handleUpdateStatus = async (id: number) => {
     Alert.alert(
       "Konfirmasi",
-      "Apakah kamu yakin ingin menyelesaikan tugas pengiriman ini?",
+      "Apakah Anda yakin ingin menandai pengiriman ini sebagai selesai?",
       [
         { text: "Batal", style: "cancel" },
         {
           text: "Ya",
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem("auth_token");
-              if (!token) throw new Error("Token tidak ditemukan");
-              await updateStatusPengiriman(id, token);
-              Alert.alert("Sukses", "Status pengiriman telah diperbarui.");
-              loadData();
+              await updateStatusPengiriman(id);
+              Alert.alert("Sukses", "Status pengiriman berhasil diperbarui.");
+              loadTugas();
             } catch (err) {
-              Alert.alert("Gagal", "Gagal memperbarui status.");
+              Alert.alert("Gagal", "Gagal memperbarui status pengiriman.");
             }
           },
         },
@@ -82,22 +110,31 @@ export default function KurirProfilePage() {
       <Card.Content>
         <View style={styles.txHeader}>
           <View>
-            <Text style={styles.kode}>Kode: {item.kode}</Text>
-            <Text>Tanggal: {new Date(item.tanggal).toLocaleDateString()}</Text>
+            <Text style={styles.kode}>
+              ID Transaksi: {item.ID_TRANSAKSI_PEMBELIAN}
+            </Text>
+            <Text>
+              Tanggal: {new Date(item.created_at).toLocaleDateString()}
+            </Text>
           </View>
-          <Text style={styles.nilai}>Status: {item.status}</Text>
+          <Text style={styles.status}>{item.STATUS_TRANSAKSI}</Text>
         </View>
-        <Text>Metode Pengiriman: {item.metode_pengiriman}</Text>
+        <Text>Metode Pengiriman: {item.DELIVERY_METHOD}</Text>
         <Divider style={{ marginVertical: 8 }} />
-        <TouchableOpacity
-          style={styles.selesaiButton}
-          onPress={() => handleUpdateStatus(item.id)}
-          disabled={item.status === "Selesai"}
-        >
-          <Text style={styles.selesaiButtonText}>
-            {item.status === "Selesai" ? "Sudah Selesai" : "Tandai Selesai"}
-          </Text>
-        </TouchableOpacity>
+        <Button
+          title={
+            item.STATUS_TRANSAKSI === "Selesai"
+              ? "Sudah Selesai"
+              : "Tandai Selesai"
+          }
+          onPress={() => handleUpdateStatus(item.ID_TRANSAKSI_PEMBELIAN)}
+          disabled={item.STATUS_TRANSAKSI === "Selesai"}
+          color={
+            item.STATUS_TRANSAKSI === "Selesai"
+              ? Colors.GRAY
+              : Colors.BUTTON_PRIMARY
+          }
+        />
       </Card.Content>
     </Card>
   );
@@ -123,24 +160,33 @@ export default function KurirProfilePage() {
               <>
                 <Text style={styles.name}>{profile.NAMA_PEGAWAI}</Text>
                 <Text style={styles.email}>{profile.EMAIL_PEGAWAI}</Text>
-                <Text style={styles.value}>
-                  Komisi: Rp{profile.KOMISI_PEGAWAI.toLocaleString()}
-                </Text>
-                <Text style={styles.value}>
-                  Jabatan: {profile.jabatans.NAMA_JABATAN}
-                </Text>
               </>
             ) : (
               <Text>Profil tidak tersedia</Text>
             )}
           </View>
 
-          <Text style={styles.subHeader}>History Tugas Pengiriman</Text>
+          <Text style={styles.subHeader}>Daftar Tugas Pengiriman</Text>
           <FlatList
             data={tugas}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.ID_TRANSAKSI_PEMBELIAN.toString()}
             renderItem={renderTugas}
-            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+            contentContainerStyle={{ paddingBottom: 80, marginTop: 12 }}
+          />
+
+          <Text style={styles.subHeader}>History Tugas Pengiriman</Text>
+          <FlatList
+            data={tugasSelesai}
+            keyExtractor={(item) => item.ID_TRANSAKSI_PEMBELIAN.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={styles.kode}>
+                  ID Transaksi: {item.ID_TRANSAKSI_PEMBELIAN}
+                </Text>
+                <Text>Status Transaksi: {item.STATUS_TRANSAKSI}</Text>
+                <Text>Delivery Method: {item.DELIVERY_METHOD}</Text>
+              </View>
+            )}
             contentContainerStyle={{ paddingBottom: 80, marginTop: 12 }}
           />
         </>
@@ -168,7 +214,6 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 18, fontWeight: "700", color: Colors.TEXT_DARK },
   email: { fontSize: 14, color: Colors.GRAY, marginTop: 4 },
-  value: { fontSize: 14, color: Colors.TEXT_DARK, marginTop: 6 },
 
   subHeader: {
     fontSize: 16,
@@ -187,15 +232,18 @@ const styles = StyleSheet.create({
   },
   txHeader: { flexDirection: "row", justifyContent: "space-between" },
   kode: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },
-  nilai: { fontSize: 16, fontWeight: "600", color: Colors.BUTTON_PRIMARY },
+  status: { fontSize: 16, fontWeight: "600", color: Colors.BUTTON_PRIMARY },
 
-  selesaiButton: {
+  button: {
     backgroundColor: Colors.BUTTON_PRIMARY,
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: "center",
   },
-  selesaiButtonText: { color: Colors.WHITE, fontWeight: "600" },
+  buttonDisabled: {
+    backgroundColor: Colors.GRAY,
+  },
+  buttonText: { color: Colors.WHITE, fontWeight: "600" },
 
   error: { color: "red", textAlign: "center", marginTop: 20 },
 });
