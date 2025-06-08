@@ -10,8 +10,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
+import { Card, Divider } from "react-native-paper";
 
 import CategoryList from "../../components/CategoryList";
 import IntroHeader, { BadgeInfo } from "../../components/IntroHeader";
@@ -53,20 +54,17 @@ export default function HomePage() {
   useEffect(() => {
     (async () => {
       const token = await AsyncStorage.getItem("token");
-      // Fetch products
       axios
         .get<Product[]>(`${API_BASE_URL}/produk`, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         })
         .then((res) => {
           setFetchedProducts(res.data);
-          // Ambil 20 produk terakhir
           const sorted = res.data.sort((a, b) => a.id - b.id);
           setRecentProducts(sorted.slice(-20));
         })
         .catch((err) => console.error("Fetch produk error:", err));
 
-      // Fetch notifications
       axios
         .get<{ count: number }>(
           `${API_BASE_URL}/notifications/unread-count`,
@@ -75,7 +73,6 @@ export default function HomePage() {
         .then((res) => setNotificationCount(res.data.count))
         .catch((err) => console.error("Fetch notifikasi error:", err));
 
-      // Fetch top sellers
       axios
         .get<{ success: boolean; data: TopSeller[] }>(
           `${API_BASE_URL}/badges/top-sellers`,
@@ -107,6 +104,24 @@ export default function HomePage() {
         badge={badge}
       />
 
+      {/* Tentang ReuseMart */}
+      <Card style={styles.infoCard}>
+        <Card.Content>
+          <View style={styles.infoHeader}>
+            <Text style={styles.infoIcon}>ℹ️</Text>
+            <Text style={styles.infoTitle}>Tentang ReuseMart</Text>
+          </View>
+          <Text style={styles.infoText}>
+            ReuseMart adalah platform marketplace yang memfasilitasi penitipan
+            barang preloved dan donasi, memastikan setiap barang mendapat
+            kesempatan kedua. Temukan, titip, atau beli produk unik dengan mudah
+            di sini!
+          </Text>
+        </Card.Content>
+      </Card>
+
+      <Divider style={styles.sectionDivider} />
+
       {topSellers.length > 0 && (
         <View style={styles.topSection}>
           <Text style={styles.sectionTitle}>Top Seller Bulan Ini</Text>
@@ -123,16 +138,17 @@ export default function HomePage() {
         </View>
       )}
 
-      <View style={{ marginTop: 16 }}>
-        <CategoryList
-          selected={selectedCategory}
-          setSelected={setSelectedCategory}
-        />
-      </View>
+      <Divider style={styles.sectionDivider} />
 
+      <CategoryList
+        selected={selectedCategory}
+        setSelected={setSelectedCategory}
+      />
 
       <Text style={styles.title}>
-        {selectedCategory === "recent" ? "Produk Terkini" : `Kategori: ${selectedCategory}`}
+        {selectedCategory === "recent"
+          ? "Produk Terkini"
+          : `Kategori: ${selectedCategory}`}
       </Text>
 
       <ProductGrid products={filteredProducts} />
@@ -157,11 +173,43 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.WHITE },
   content: { padding: 16 },
 
-  topSection: {
-    backgroundColor: Colors.WHITE,
+  // Info Card
+  infoCard: {
     borderRadius: 12,
+    backgroundColor: Colors.WHITE,
+    elevation: 3,
+    marginBottom: 16,
+  },
+  infoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  infoIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.BUTTON_PRIMARY,
+  },
+  infoText: {
+    fontSize: 14,
+    color: Colors.TEXT_DARK,
+    lineHeight: 22,
+  },
+
+  sectionDivider: {
+    marginVertical: 16,
+    backgroundColor: Colors.GRAY,
+    height: 1,
+  },
+
+  topSection: {
+    borderRadius: 12,
+    backgroundColor: Colors.WHITE,
     padding: 16,
-    marginVertical: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -171,17 +219,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: Colors.BUTTON_PRIMARY,
+    marginBottom: 12,
   },
 
-  sellerList: { marginTop: 12 },
+  sellerList: { marginTop: 4 },
   sellerItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   sellerName: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: Colors.TEXT_DARK,
   },
   sellerDates: {
