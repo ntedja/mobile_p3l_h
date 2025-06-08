@@ -2,13 +2,18 @@ import React, { FC, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   SafeAreaView,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
-import { Card, Divider } from "react-native-paper";
+import {
+  Appbar,
+  Avatar,
+  Card,
+  Divider,
+  List
+} from "react-native-paper";
 
 import {
   BarangHistory,
@@ -36,7 +41,7 @@ const PenitipProfilePage: FC = () => {
       const me = await fetchPenitipProfile();
       setProfile(me);
     } catch (err) {
-      console.error("Error fetching profile", err);
+      console.error(err);
     } finally {
       setLoadingProfile(false);
     }
@@ -49,88 +54,83 @@ const PenitipProfilePage: FC = () => {
       const list = await fetchRiwayatBarangs();
       setBarangs(list);
     } catch (err: any) {
-      setErrorB(err.message || "Gagal memuat riwayat barang");
+      setErrorB(err.message);
     } finally {
       setLoadingB(false);
     }
   };
 
   const renderItem = ({ item }: { item: BarangHistory }) => (
-    <Card style={styles.card}>
-      <Card.Content>
-        <View style={styles.txHeader}>
-          <View style={styles.txInfo}>
-            <Text style={styles.itemName}>{item.nama}</Text>
-            <Text style={styles.itemDate}>
-              Masuk: {new Date(item.tgl_masuk).toLocaleDateString()}
-            </Text>
-            {item.tgl_keluar && (
-              <Text style={styles.itemDate}>
-                Keluar: {new Date(item.tgl_keluar).toLocaleDateString()}
-              </Text>
-            )}
-          </View>
-          <Text style={styles.itemPrice}>Rp{item.harga.toLocaleString()}</Text>
+    <Card style={styles.itemCard}>
+      <View style={styles.itemContainer}>
+        <List.Icon icon="package-variant" color={Colors.BUTTON_PRIMARY} />
+        <View style={styles.itemContent}>
+          <Text style={styles.itemTitle}>{item.nama}</Text>
+          <Text style={styles.itemSub}>{`Masuk: ${new Date(
+            item.tgl_masuk
+          ).toLocaleDateString()}`}</Text>
+          {item.tgl_keluar && (
+            <Text style={styles.itemSub}>{`Keluar: ${new Date(
+              item.tgl_keluar
+            ).toLocaleDateString()}`}</Text>
+          )}
+          <Text style={styles.itemStatus}>{`Status: ${item.status}`}</Text>
+          <Text style={styles.itemCategory}>{`Kategori: ${item.kategori}`}</Text>
         </View>
-        <Divider style={styles.divider} />
-        <View style={styles.statusRow}>
-          <Text style={styles.itemStatus}>Status: <Text style={styles.statusText}>{item.status}</Text></Text>
-          <Text style={styles.itemCategory}>{item.kategori}</Text>
-        </View>
-      </Card.Content>
+        <Text style={styles.itemPrice}>Rp{item.harga.toLocaleString()}</Text>
+      </View>
+      <Divider />
     </Card>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile Penitip</Text>
-      </View>
+      <Appbar.Header style={styles.appbar}>
+        <Appbar.BackAction onPress={() => {}} />
+        <Appbar.Content title="Profil Penitip" />
+      </Appbar.Header>
 
-      <View style={styles.profileBox}>
+      <View style={styles.profileSection}>
         {loadingProfile ? (
           <ActivityIndicator size="large" color={Colors.BUTTON_PRIMARY} />
         ) : profile ? (
-          <>
-            <Image
-                          source={require("../../assets/images/avatar_placeholder.png")}
-                          style={styles.avatar}
-                        />
-            <Text style={styles.profileName}>{profile.name}</Text>
-            <Text style={styles.profileEmail}>{profile.email}</Text>
-            <View style={styles.valuesRow}>
-              <View style={styles.valueBox}>
-                <Text style={styles.valueLabel}>Saldo</Text>
-                <Text style={styles.valueText}>Rp{profile.saldo.toLocaleString()}</Text>
+          <Card style={styles.profileCard}>
+            <Card.Title
+              title={profile.name}
+              subtitle={profile.email}
+              left={(props) => <Avatar.Text {...props} label={profile.name.charAt(0)} />}
+            />
+            <Card.Content style={styles.statsRow}>
+              <View style={styles.statBlock}>
+                <Text style={styles.statLabel}>Saldo</Text>
+                <Text style={styles.statValue}>Rp{profile.saldo.toLocaleString()}</Text>
               </View>
-              <View style={styles.valueBox}>
-                <Text style={styles.valueLabel}>Poin</Text>
-                <Text style={styles.valueText}>{profile.point}</Text>
+              <View style={styles.statBlock}>
+                <Text style={styles.statLabel}>Poin</Text>
+                <Text style={styles.statValue}>{profile.point}</Text>
               </View>
-            </View>
-          </>
+            </Card.Content>
+          </Card>
         ) : (
-          <Text style={styles.errorText}>Profil tidak tersedia</Text>
+          <Text style={styles.error}>Profil tidak tersedia</Text>
         )}
       </View>
 
-      {loadingB ? (
-        <ActivityIndicator
-          size="large"
-          color={Colors.BUTTON_PRIMARY}
-          style={styles.loader}
-        />
-      ) : errorB ? (
-        <Text style={styles.errorText}>{errorB}</Text>
-      ) : (
-        <FlatList
-          data={barangs}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-        />
-      )}
+      <View style={styles.listSection}>
+        <Text style={styles.sectionTitle}>Riwayat Barang Titipan</Text>
+        {loadingB ? (
+          <ActivityIndicator size="large" color={Colors.BUTTON_PRIMARY} />
+        ) : errorB ? (
+          <Text style={styles.error}>{errorB}</Text>
+        ) : (
+          <FlatList
+            data={barangs}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 };
@@ -138,140 +138,31 @@ const PenitipProfilePage: FC = () => {
 export default PenitipProfilePage;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
-  header: {
-    height: 60,
-    backgroundColor: Colors.BUTTON_PRIMARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  headerTitle: {
-    color: Colors.WHITE,
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  profileBox: {
-    backgroundColor: Colors.WHITE,
-    margin: 16,
-    padding: 20,
-    borderRadius: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 12,
-    backgroundColor: Colors.GRAY,
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.TEXT_DARK,
-    marginBottom: 4,
-  },
-  profileEmail: {
-    fontSize: 14,
-    color: Colors.GRAY,
-    marginBottom: 12,
-  },
-  valuesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  valueBox: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  valueLabel: {
-    fontSize: 12,
-    color: Colors.GRAY,
-  },
-  valueText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.TEXT_DARK,
-    marginTop: 2,
-  },
-  listContainer: {
-    paddingBottom: 80,
-    marginTop: 8,
-  },
-  separator: {
-    height: 12,
-  },
-  card: {
-    marginHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: Colors.WHITE,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 1 },
+  container: { flex: 1, backgroundColor: "#F0F2F5" },
+  appbar: { backgroundColor: Colors.BUTTON_PRIMARY },
+  profileSection: { padding: 16 },
+  profileCard: { elevation: 3, borderRadius: 12 },
+  statsRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 8 },
+  statBlock: { alignItems: "center" },
+  statLabel: { fontSize: 12, color: Colors.GRAY },
+  statValue: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },
+  listSection: { flex: 1, paddingHorizontal: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 8 },
+  listContainer: { paddingBottom: 24 },
+
+  itemCard: { marginVertical: 6, borderRadius: 10, overflow: "hidden" },
+  itemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
   },
-  txHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  txInfo: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.TEXT_DARK,
-    marginBottom: 2,
-  },
-  itemDate: {
-    fontSize: 12,
-    color: Colors.GRAY,
-    marginTop: 2,
-  },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.BUTTON_PRIMARY,
-  },
-  divider: {
-    marginVertical: 8,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  itemStatus: {
-    fontSize: 14,
-  },
-  statusText: {
-    fontWeight: '600',
-    color: Colors.BUTTON_SECONDARY,
-  },
-  itemCategory: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    color: Colors.GRAY,
-  },
-  loader: {
-    marginTop: 20,
-  },
-  errorText: {
-    color: '#D32F2F',
-    textAlign: 'center',
-    marginTop: 20,
-    fontWeight: '500',
-  },
+  itemContent: { flex: 1, marginLeft: 8 },
+  itemTitle: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },
+  itemSub: { fontSize: 12, color: Colors.GRAY, marginTop: 2 },
+  itemStatus: { fontSize: 12, marginTop: 4 },
+  itemCategory: { fontSize: 12, fontStyle: "italic", marginTop: 2 },
+  itemPrice: { fontSize: 16, fontWeight: "700", color: Colors.BUTTON_PRIMARY },
+  actions: { justifyContent: "flex-end", padding: 8 },
+
+  error: { color: "#D32F2F", textAlign: "center", marginTop: 20 },
 });
