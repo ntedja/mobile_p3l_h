@@ -2,8 +2,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import BuyerProfilePage from "./_private/BuyerProfilePage";
-import PenitipProfilePage from "./_private/PenitipProfilePage";
+import BuyerProfilePage from "../(profile)/BuyerProfilePage";
+import PenitipProfilePage from "../(profile)/PenitipProfilePage";
 // import KurirProfilePage from "./nested/KurirProfilePage";
 // import HunterProfilePage from "./nested/HunterProfilePage";
 

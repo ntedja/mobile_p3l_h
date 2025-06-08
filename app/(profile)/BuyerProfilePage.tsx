@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 import { Card, Divider } from "react-native-paper";
-import Colors from "../../../services/Colors";
+import Colors from "../../services/Colors";
 
 import {
   fetchPesananDetail,
@@ -23,7 +23,7 @@ import {
   PesananDetail,
   submitRatingBarang,
   UserProfile,
-} from "../../../api/pembeliApi";
+} from "../../api/pembeliApi";
 
 export default function BuyerProfilePage() {
   // ==== Profil ====
@@ -280,7 +280,7 @@ export default function BuyerProfilePage() {
         ) : profile ? (
           <>
             <Image
-              source={require("../../../assets/images/avatar_placeholder.png")}
+              source={require("../../assets/images/avatar_placeholder.png")}
               style={styles.avatar}
             />
             <View style={{ marginLeft: 12 }}>

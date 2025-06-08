@@ -15,8 +15,8 @@ import {
   fetchRiwayatTitipan,
   PenitipProfile,
   Titipan,
-} from "../../../api/penitipApi";
-import Colors from "../../../services/Colors";
+} from "../../api/penitipApi";
+import Colors from "../../services/Colors";
 
 export default function PenitipProfilePage() {
   const [profile, setProfile] = useState<PenitipProfile | null>(null);
