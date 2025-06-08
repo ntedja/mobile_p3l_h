@@ -1,10 +1,20 @@
-// app/(tabs)/MerchandisePage.tsx
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { useEffect, useState } from "react";
-import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import axios, { AxiosError } from "axios";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const API_BASE_URL = "http://172.16.36.88:8000/api";
+const API_BASE_URL = "http://192.168.0.100:8000/api";
 
 export type Merchandise = {
   ID_MERCHANDISE: number;
@@ -14,91 +24,277 @@ export type Merchandise = {
   GAMBAR: string | null;
 };
 
+interface PembeliData {
+  ID_PEMBELI: string;
+  NAMA_PEMBELI: string;
+  POINT_LOYALITAS_PEMBELI: number;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+interface KlaimMerchandiseResponse {
+  ID_KLAIM: number;
+  ID_MERCHANDISE: number;
+  ID_PEMBELI: string;
+  TGL_KLAIM: string;
+  TGL_PENGAMBILAN: string | null;
+  merchandise: Merchandise;
+}
+
 export default function MerchandisePage() {
+  const router = useRouter();
   const [merchandises, setMerchandises] = useState<Merchandise[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userData, setUserData] = useState<{
+    id?: string;
+    role?: string;
+    points?: number;
+  }>({});
+  const [claimHistory, setClaimHistory] = useState<KlaimMerchandiseResponse[]>(
+    []
+  );
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchMerchandises = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchUserData = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const role = await AsyncStorage.getItem("role");
 
-        const token = await AsyncStorage.getItem("token");
-
-        const response = await axios.get<Merchandise[]>(
-          `${API_BASE_URL}/merchandises`,
+      if (token && role === "pembeli") {
+        const userResponse = await axios.get<ApiResponse<PembeliData>>(
+          `${API_BASE_URL}/pembeli/me`,
           {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        if (response.status === 200) {
-          setMerchandises(response.data);
-        } else {
-          throw new Error(`Unexpected status code: ${response.status}`);
+        console.log("Full user response:", userResponse.data);
+
+        if (userResponse.data.success && userResponse.data.data) {
+          const pembeliData = userResponse.data.data;
+          setUserData({
+            id: pembeliData.ID_PEMBELI,
+            role,
+            points: pembeliData.POINT_LOYALITAS_PEMBELI,
+          });
         }
-      } catch (err: any) {
-        let errorMessage =
-          "Failed to load merchandises. Please try again later.";
-
-        if (err.response) {
-          // Server responded with a status other than 2xx
-          console.error("Server error:", err.response.data);
-          errorMessage = `Server error: ${err.response.status}`;
-
-          if (err.response.status === 500) {
-            errorMessage =
-              "Server is currently unavailable. Please try again later.";
-          }
-        } else if (err.request) {
-          // Request was made but no response received
-          console.error("No response received:", err.request);
-          errorMessage =
-            "No response from server. Check your network connection.";
-        } else {
-          // Something happened in setting up the request
-          console.error("Request setup error:", err.message);
-          errorMessage = "Request failed to setup.";
-        }
-
-        setError(errorMessage);
-        Alert.alert("Error", errorMessage);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.log(error.response?.data);
+      } else {
+        console.error("Unexpected error", error);
+      }
+    }
+  };
 
-    fetchMerchandises();
+  const fetchMerchandises = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) throw new Error("No authentication token");
+
+      const response = await axios.get<Merchandise[]>(
+        `${API_BASE_URL}/merchandises`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setMerchandises(response.data);
+    } catch (error) {
+      console.error("Failed to fetch merchandises:", error);
+      throw error;
+    }
+  };
+
+  const fetchClaimHistory = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const role = await AsyncStorage.getItem("role");
+      if (!token || role !== "pembeli" || !userData.id) {
+        console.log(
+          "Skipping claim history fetch: missing token, role, or user ID"
+        );
+        return;
+      }
+
+      const response = await axios.get<KlaimMerchandiseResponse[]>(
+        `${API_BASE_URL}/klaim-merchandise`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { ID_PEMBELI: userData.id },
+        }
+      );
+
+      setClaimHistory(response.data);
+    } catch (error) {
+      console.error("Failed to fetch claim history:", error);
+      if (error instanceof AxiosError) {
+        Alert.alert(
+          "Error",
+          error.response?.data?.message || "Failed to load claim history"
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          "An unexpected error occurred while loading claim history"
+        );
+      }
+    }
+  };
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      await Promise.all([
+        fetchMerchandises(),
+        fetchUserData(),
+        fetchClaimHistory(),
+      ]);
+    } catch (err: unknown) {
+      let errorMessage = "Failed to load data. Please try again later.";
+
+      if (err instanceof AxiosError) {
+        console.error("Server error:", err.response?.data);
+        errorMessage = `Server error: ${err.response?.status}`;
+        if (err.response?.status === 500) {
+          errorMessage =
+            "Server is currently unavailable. Please try again later.";
+        }
+      } else if (err instanceof Error) {
+        console.error("Request setup error:", err.message);
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
-  const retryFetch = () => {
-    setError(null);
-    setLoading(true);
-    useEffect(() => {
-      const fetchMerchandises = async () => {
-        try {
-          const token = await AsyncStorage.getItem("token");
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+      fetchClaimHistory();
+    }, [])
+  );
 
-          const response = await axios.get<Merchandise[]>(
-            `${API_BASE_URL}/merchandises`,
-            {
-              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-            }
-          );
+  const retryFetch = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      await fetchData();
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+      setError("Failed to load data. Please try again later.");
+      setLoading(false);
+    }
+  };
 
-          setMerchandises(response.data);
-          setLoading(false);
-        } catch (err) {
-          console.error("Failed to fetch merchandises:", err);
-          setError("Failed to load merchandises. Please try again later.");
-          setLoading(false);
-        }
-      };
+  const handleClaimMerchandise = async (merchandise: Merchandise) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const role = await AsyncStorage.getItem("role");
 
-      fetchMerchandises();
-    }, []);
+      if (!token || role !== "pembeli") {
+        Alert.alert(
+          "Login Required",
+          "You need to login as a buyer to claim merchandise",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Login", onPress: () => router.push("/login") },
+          ]
+        );
+        return;
+      }
+
+      if (merchandise.JUMLAH <= 0) {
+        Alert.alert(
+          "Out of Stock",
+          "This merchandise is currently out of stock"
+        );
+        return;
+      }
+
+      if (
+        userData.points === undefined ||
+        userData.points < merchandise.POIN_DIBUTUHKAN
+      ) {
+        Alert.alert(
+          "Point Tidak Cukup",
+          `Kamu harus memiliki ${merchandise.POIN_DIBUTUHKAN} point untuk klaim merchandise ini. Kamu memiliki ${userData.points} point.`
+        );
+        return;
+      }
+
+      Alert.alert(
+        "Konfrimasi Klaim",
+        `Apa kamu yakin ingin mengklaim merchandise ${merchandise.NAMA_MERCHANDISE} dengan ${merchandise.POIN_DIBUTUHKAN} point?`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Claim",
+            onPress: async () => {
+              try {
+                const response = await axios.post<KlaimMerchandiseResponse>(
+                  `${API_BASE_URL}/klaim-merchandise`,
+                  {
+                    ID_MERCHANDISE: merchandise.ID_MERCHANDISE,
+                    ID_PEMBELI: userData.id,
+                    TGL_KLAIM: new Date().toISOString().split("T")[0],
+                  },
+                  {
+                    headers: { Authorization: `Bearer ${token}` },
+                  }
+                );
+
+                if (response.status === 201) {
+                  Alert.alert(
+                    "Success",
+                    `You have successfully claimed ${merchandise.NAMA_MERCHANDISE}!`
+                  );
+                  await fetchData();
+                }
+              } catch (error: unknown) {
+                console.error("Claim error:", error);
+                let errorMessage = "Failed to claim merchandise";
+                if (error instanceof AxiosError) {
+                  errorMessage = error.response?.data?.message || errorMessage;
+                }
+                Alert.alert("Error", errorMessage);
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error in handleClaimMerchandise:", error);
+      Alert.alert("Error", "An unexpected error occurred");
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   if (loading) {
@@ -113,48 +309,156 @@ export default function MerchandisePage() {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>{error}</Text>
-        <Text style={styles.retryText} onPress={retryFetch}>
-          Tap to retry
-        </Text>
+        <TouchableOpacity onPress={retryFetch}>
+          <Text style={styles.retryText}>Tap to retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Merchandise Catalog</Text>
+    <View style={styles.container}>
+      <ScrollView>
+        <Text style={styles.title}>Merchandise Catalog</Text>
 
-      {merchandises.length === 0 ? (
-        <Text style={styles.emptyText}>No merchandises available</Text>
-      ) : (
-        <View style={styles.grid}>
-          {merchandises.map((merch) => (
-            <View key={merch.ID_MERCHANDISE} style={styles.card}>
-              // Di MerchandisePage.tsx
-              {merch.GAMBAR ? (
-                <Image
-                  source={{ uri: merch.GAMBAR }}
-                  style={styles.image}
-                  resizeMode="cover"
-                  onError={(e) =>
-                    console.log("Image failed to load:", e.nativeEvent.error)
-                  }
-                />
+        {userData.role === "pembeli" && (
+          <Text style={styles.pointsText}>
+            Your Points: {userData.points || 0}
+          </Text>
+        )}
+
+        {merchandises.length === 0 ? (
+          <Text style={styles.emptyText}>No merchandises available</Text>
+        ) : (
+          <View style={styles.grid}>
+            {merchandises.map((merch) => (
+              <TouchableOpacity
+                key={merch.ID_MERCHANDISE}
+                style={styles.card}
+                onPress={() => handleClaimMerchandise(merch)}
+                activeOpacity={0.7}
+              >
+                {merch.GAMBAR ? (
+                  <Image
+                    source={{ uri: merch.GAMBAR }}
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.image, styles.noImage]}>
+                    <Text>No Image</Text>
+                  </View>
+                )}
+                <Text style={styles.name}>{merch.NAMA_MERCHANDISE}</Text>
+                <Text style={styles.points}>
+                  {merch.POIN_DIBUTUHKAN} points
+                </Text>
+                <Text style={styles.stock}>
+                  {merch.JUMLAH > 0 ? `Stock: ${merch.JUMLAH}` : "Out of stock"}
+                </Text>
+                {userData.role === "pembeli" ? (
+                  <Text
+                    style={[
+                      styles.claimText,
+                      (userData.points || 0) >= merch.POIN_DIBUTUHKAN &&
+                      merch.JUMLAH > 0
+                        ? styles.claimable
+                        : styles.notClaimable,
+                    ]}
+                  >
+                    {(userData.points || 0) >= merch.POIN_DIBUTUHKAN &&
+                    merch.JUMLAH > 0
+                      ? "Tap untuk Klaim"
+                      : "Tidak bisa Klaim"}
+                  </Text>
+                ) : (
+                  <Text style={[styles.claimText, styles.notClaimable]}>
+                    Login to Claim
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Floating History Button */}
+      {userData.role === "pembeli" && (
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => setHistoryModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="time-outline" size={24} color="white" />
+        </TouchableOpacity>
+      )}
+
+      {/* Claim History Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={historyModalVisible}
+        onRequestClose={() => setHistoryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Claim History</Text>
+            <ScrollView>
+              {claimHistory.length === 0 ? (
+                <Text style={styles.emptyText}>No claim history available</Text>
               ) : (
-                <View style={[styles.image, styles.noImage]}>
-                  <Text>No Image</Text>
+                <View style={styles.historyGrid}>
+                  {claimHistory.map((claim) => (
+                    <View key={claim.ID_KLAIM} style={styles.historyCard}>
+                      {claim.merchandise.GAMBAR ? (
+                        <Image
+                          source={{ uri: claim.merchandise.GAMBAR }}
+                          style={styles.historyImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={[styles.historyImage, styles.noImage]}>
+                          <Text>No Image</Text>
+                        </View>
+                      )}
+                      <Text style={styles.historyName}>
+                        {claim.merchandise.NAMA_MERCHANDISE}
+                      </Text>
+                      <Text style={styles.historyDate}>
+                        Claimed: {formatDate(claim.TGL_KLAIM)}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.historyStatus,
+                          claim.TGL_PENGAMBILAN
+                            ? styles.statusPicked
+                            : styles.statusNotPicked,
+                        ]}
+                      >
+                        {claim.TGL_PENGAMBILAN
+                          ? "Sudah Diambil"
+                          : "Belum Diambil"}
+                      </Text>
+                      {claim.TGL_PENGAMBILAN && (
+                        <Text style={styles.historyPickedDate}>
+                          Picked: {formatDate(claim.TGL_PENGAMBILAN)}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
                 </View>
               )}
-              <Text style={styles.name}>{merch.NAMA_MERCHANDISE}</Text>
-              <Text style={styles.points}>{merch.POIN_DIBUTUHKAN} points</Text>
-              <Text style={styles.stock}>
-                {merch.JUMLAH > 0 ? `Stock: ${merch.JUMLAH}` : "Out of stock"}
-              </Text>
-            </View>
-          ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setHistoryModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
-    </ScrollView>
+      </Modal>
+    </View>
   );
 }
 
@@ -170,6 +474,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
     color: "#333",
+  },
+  pointsText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#4CAF50",
   },
   grid: {
     flexDirection: "row",
@@ -213,6 +524,23 @@ const styles = StyleSheet.create({
   stock: {
     fontSize: 12,
     color: "#666",
+    marginBottom: 4,
+  },
+  claimText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: "center",
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  claimable: {
+    backgroundColor: "#4CAF50",
+    color: "white",
+  },
+  notClaimable: {
+    backgroundColor: "#9E9E9E",
+    color: "white",
   },
   errorText: {
     color: "red",
@@ -229,5 +557,106 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
     color: "#666",
+  },
+  floatingButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#4CAF50",
+    borderRadius: 50,
+    width: 60,
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    width: "90%",
+    maxHeight: "80%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+    color: "#333",
+  },
+  historyGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  historyCard: {
+    width: "48%",
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  historyImage: {
+    width: "100%",
+    height: 100,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  historyName: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
+  historyStatus: {
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: "center",
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  statusPicked: {
+    backgroundColor: "#4CAF50",
+    color: "white",
+  },
+  statusNotPicked: {
+    backgroundColor: "#F44336",
+    color: "white",
+  },
+  historyPickedDate: {
+    fontSize: 12,
+    color: "#666",
+  },
+  closeButton: {
+    backgroundColor: "#FF6B6B",
+    borderRadius: 8,
+    padding: 10,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });

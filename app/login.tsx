@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { login } from "../api/apiAuth"; // misalnya Anda punya fungsi login di apiAuth.tsx
+import { login } from "../api/apiAuth";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -30,7 +30,6 @@ export default function LoginScreen() {
 
       await AsyncStorage.setItem("token", data.token);
 
-      // perbaiki path role di sini:
       const role = data.user?.role ?? data.role;
       if (typeof role === "string") {
         await AsyncStorage.setItem("role", role);
@@ -38,15 +37,28 @@ export default function LoginScreen() {
         await AsyncStorage.removeItem("role");
       }
 
-        router.replace("/(tabs)/HomePage");
+      router.replace("/(tabs)/HomePage");
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message;
       setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
+  const handleGuestLogin = async () => {
+    try {
+      // Set role sebagai guest di AsyncStorage
+      await AsyncStorage.setItem("role", "guest");
+      // Bersihkan token jika ada
+      await AsyncStorage.removeItem("token");
+      // Redirect ke homepage
+      router.replace("/(tabs)/HomePage");
+    } catch (err) {
+      console.error("Guest login error:", err);
+      setErrorMsg("Failed to login as guest");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.wrapper}>
@@ -94,6 +106,22 @@ export default function LoginScreen() {
           ) : (
             <Text style={styles.loginButtonText}>Log In</Text>
           )}
+        </TouchableOpacity>
+
+        {/* Tambahkan divider */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Tombol login sebagai tamu */}
+        <TouchableOpacity
+          style={styles.guestButton}
+          onPress={handleGuestLogin}
+          disabled={loading}
+        >
+          <Text style={styles.guestButtonText}>Continue as Guest</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -156,9 +184,39 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 50,
     alignItems: "center",
+    marginBottom: 16,
   },
   loginButtonText: {
     color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  // Styles baru untuk guest login
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#CFCAB5",
+  },
+  dividerText: {
+    width: 50,
+    textAlign: "center",
+    color: "#64748B",
+  },
+  guestButton: {
+    backgroundColor: "#F1F5F9",
+    paddingVertical: 15,
+    borderRadius: 50,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#CFCAB5",
+  },
+  guestButtonText: {
+    color: "#3E5B50",
     fontWeight: "600",
     fontSize: 16,
   },

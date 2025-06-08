@@ -10,7 +10,7 @@ interface LoginResponse {
   jabatan?: string;
 }
 
-const API_BASE_URL = "http://172.16.36.88:8000/api";
+const API_BASE_URL = "http://192.168.0.100:8000/api";
 
 const apiAuth = axios.create({
   baseURL: API_BASE_URL,
@@ -54,12 +54,13 @@ export const login = async (email: string, password: string) => {
     });
     const { token, role, user, jabatan } = response.data;
 
-    tokenValue = token; // update token di variabel global
+    tokenValue = token;
 
-    // Simpan ke AsyncStorage
-    await AsyncStorage.setItem("token", token);
+    await AsyncStorage.multiSet([
+      ["token", token],
+      ["role", role],
+    ]);
 
-    // Set default header setelah login
     apiAuth.defaults.headers.common.Authorization = `Bearer ${token}`;
 
     return response.data;
