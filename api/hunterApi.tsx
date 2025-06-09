@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getToken } from "./apiAuth";
 
-const API_BASE_URL = "http://192.168.18.73:8000/api";
+const API_BASE_URL = "http://10.31.241.50:8000/api";
 
 const hunterApi = axios.create({
   baseURL: API_BASE_URL,

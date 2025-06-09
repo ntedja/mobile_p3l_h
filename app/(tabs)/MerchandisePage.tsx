@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-const API_BASE_URL = "http://10.41.244.79:8000/api";
+const API_BASE_URL = "http://10.31.241.50:8000/api";
 
 export type Merchandise = {
   ID_MERCHANDISE: number;

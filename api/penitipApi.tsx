@@ -1,12 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://10.41.244.79:8000/api";
+const API_BASE_URL = "http://10.31.241.50:8000/api";
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
-    "Accept": "application/json",
+    Accept: "application/json",
   },
 });
 
@@ -30,12 +30,12 @@ api.interceptors.request.use(
 
 // Tangani 401 Unauthorized: redirect atau logout
 api.interceptors.response.use(
-  response => response,
-  error => {
+  (response) => response,
+  (error) => {
     if (error.response?.status === 401) {
-      console.warn('Unauthorized: token mungkin kedaluwarsa');
+      console.warn("Unauthorized: token mungkin kedaluwarsa");
       // TODO: navigasi ke layar login atau hapus token
-      AsyncStorage.removeItem('token');
+      AsyncStorage.removeItem("token");
       // misal: navigation.replace('Login');
     }
     return Promise.reject(error);
@@ -92,9 +92,9 @@ export async function fetchPenitipProfile(): Promise<PenitipProfile> {
  * GET /api/penitip/me/barangs
  */
 export async function fetchRiwayatBarangs(): Promise<BarangHistory[]> {
-  const res = await api.get<ApiResponse<any[]>>('/penitip/me/barangs');
+  const res = await api.get<ApiResponse<any[]>>("/penitip/me/barangs");
   if (res.data.success && Array.isArray(res.data.data)) {
-    return res.data.data.map(raw => ({
+    return res.data.data.map((raw) => ({
       id: raw.id,
       nama: raw.nama,
       kategori: raw.kategori,
@@ -104,5 +104,5 @@ export async function fetchRiwayatBarangs(): Promise<BarangHistory[]> {
       status: raw.status,
     }));
   }
-  throw new Error(res.data.message || 'Gagal mengambil riwayat barang');
+  throw new Error(res.data.message || "Gagal mengambil riwayat barang");
 }
