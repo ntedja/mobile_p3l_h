@@ -4,7 +4,10 @@ import axios from "axios";
 const API_BASE_URL = "http://192.168.18.73:8000/api";
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  },
 });
 
 /**
@@ -13,6 +16,7 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config: any) => {
     const tok = await AsyncStorage.getItem("token");
+    console.log("DEBUG token:", tok);
     if (tok) {
       config.headers = {
         ...config.headers,
@@ -22,6 +26,20 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Tangani 401 Unauthorized: redirect atau logout
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      console.warn('Unauthorized: token mungkin kedaluwarsa');
+      // TODO: navigasi ke layar login atau hapus token
+      AsyncStorage.removeItem('token');
+      // misal: navigation.replace('Login');
+    }
+    return Promise.reject(error);
+  }
 );
 
 interface ApiResponse<T> {
@@ -39,21 +57,15 @@ export interface PenitipProfile {
   point: number; // POINT_LOYALITAS_PENITIP
 }
 
-/** Satu record riwayat titipan */
-export interface Titipan {
-  id: number; // ID_TRANSAKSI_PENITIPAN
-  kode: string; // NO_NOTA_TRANSAKSI_TITIPAN
-  tanggal: string; // TGL_MASUK_TITIPAN
-  status: string; // “Masuk” atau “Keluar”
-  jumlah: number; // jumlah barang
-  nilai: number; // nilai total titipan
-  items: {
-    // detail tiap barang
-    id: number;
-    nama: string;
-    jumlah: number;
-    harga_satuan: number;
-  }[];
+/** Satu record riwayat barang penitipan */
+export interface BarangHistory {
+  id: number;
+  nama: string;
+  kategori: string;
+  harga: number;
+  tgl_masuk: string;
+  tgl_keluar?: string;
+  status: string;
 }
 
 /**
@@ -65,44 +77,32 @@ export async function fetchPenitipProfile(): Promise<PenitipProfile> {
   if (res.data.success) {
     const raw = res.data.data;
     return {
-      id: raw.ID_PENITIP,
-      name: raw.NAMA_PENITIP,
-      email: raw.EMAIL_PENITIP,
-      saldo: raw.SALDO_PENITIP ?? 0,
-      point: raw.POINT_LOYALITAS_PENITIP ?? 0,
+      id: raw.id,
+      name: raw.name,
+      email: raw.email,
+      saldo: raw.saldo ?? 0,
+      point: raw.point ?? 0,
     };
   }
   throw new Error(res.data.message || "Gagal mengambil profil Penitip");
 }
 
 /**
- * Ambil riwayat titipan antara dua tanggal
- * GET /api/penitip/me/transactions?start=YYYY-MM-DD&end=YYYY-MM-DD
+ * Ambil riwayat barang penitipan langsung dari tabel barangs
+ * GET /api/penitip/me/barangs
  */
-export async function fetchRiwayatTitipan(
-  from: Date,
-  to: Date
-): Promise<Titipan[]> {
-  const start = from.toISOString().slice(0, 10);
-  const end = to.toISOString().slice(0, 10);
-  const res = await api.get<ApiResponse<any[]>>(
-    `/penitip/me/transactions?start=${start}&end=${end}`
-  );
+export async function fetchRiwayatBarangs(): Promise<BarangHistory[]> {
+  const res = await api.get<ApiResponse<any[]>>('/penitip/me/barangs');
   if (res.data.success && Array.isArray(res.data.data)) {
-    return res.data.data.map((raw) => ({
-      id: raw.ID_TRANSAKSI_PENITIPAN,
-      kode: raw.NO_NOTA_TRANSAKSI_TITIPAN,
-      tanggal: raw.TGL_MASUK_TITIPAN,
-      status: raw.TGL_KELUAR_TITIPAN ? "Keluar" : "Masuk",
-      jumlah: raw.detailTransaksiPenitipans?.length ?? 0,
-      nilai: raw.nilai_total ?? 0,
-      items: (raw.detailTransaksiPenitipans ?? []).map((d: any) => ({
-        id: d.ID_DETAIL_TRANSAKSI_PENITIPAN,
-        nama: d.barang?.NAMA_BARANG ?? "-",
-        jumlah: d.JUMLAH,
-        harga_satuan: d.HARGA_SATUAN,
-      })),
+    return res.data.data.map(raw => ({
+      id: raw.id,
+      nama: raw.nama,
+      kategori: raw.kategori,
+      harga: raw.harga,
+      tgl_masuk: raw.tgl_masuk,
+      tgl_keluar: raw.tgl_keluar,
+      status: raw.status,
     }));
   }
-  throw new Error(res.data.message || "Gagal mengambil riwayat titipan");
+  throw new Error(res.data.message || 'Gagal mengambil riwayat barang');
 }

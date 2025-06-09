@@ -1,237 +1,168 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
-import React, { useEffect, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { Card, Divider } from "react-native-paper";
 import {
+  Appbar,
+  Avatar,
+  Card,
+  Divider,
+  List
+} from "react-native-paper";
+
+import {
+  BarangHistory,
   fetchPenitipProfile,
-  fetchRiwayatTitipan,
+  fetchRiwayatBarangs,
   PenitipProfile,
-  Titipan,
 } from "../../api/penitipApi";
 import Colors from "../../services/Colors";
 
-export default function PenitipProfilePage() {
+const PenitipProfilePage: FC = () => {
   const [profile, setProfile] = useState<PenitipProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
-
-  const [titipans, setTitipans] = useState<Titipan[]>([]);
-  const [loadingT, setLoadingT] = useState(false);
-  const [errorT, setErrorT] = useState("");
-
-  const [startDate, setStartDate] = useState<Date>(new Date(0));
-  const [endDate, setEndDate] = useState<Date>(new Date());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [barangs, setBarangs] = useState<BarangHistory[]>([]);
+  const [loadingB, setLoadingB] = useState(false);
+  const [errorB, setErrorB] = useState("");
 
   useEffect(() => {
     loadProfile();
-    loadTitipan();
+    loadBarangHistory();
   }, []);
 
-  async function loadProfile() {
+  const loadProfile = async () => {
     setLoadingProfile(true);
     try {
       const me = await fetchPenitipProfile();
       setProfile(me);
-    } catch (e) {
-      console.error("Error fetchPenitipProfile:", e);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoadingProfile(false);
     }
-  }
+  };
 
-  async function loadTitipan() {
-    setLoadingT(true);
-    setErrorT("");
+  const loadBarangHistory = async () => {
+    setLoadingB(true);
+    setErrorB("");
     try {
-      const list = await fetchRiwayatTitipan(startDate, endDate);
-      setTitipans(list);
-    } catch (e: any) {
-      setErrorT(e.message);
-      setTitipans([]);
+      const list = await fetchRiwayatBarangs();
+      setBarangs(list);
+    } catch (err: any) {
+      setErrorB(err.message);
     } finally {
-      setLoadingT(false);
+      setLoadingB(false);
     }
-  }
+  };
 
-  const renderTitipan = ({ item }: { item: Titipan }) => (
-    <Card style={styles.card}>
-      <Card.Content>
-        <View style={styles.txHeader}>
-          <View>
-            <Text style={styles.kode}>{item.kode}</Text>
-            <Text>{new Date(item.tanggal).toLocaleDateString()}</Text>
-          </View>
-          <Text style={styles.nilai}>Rp{item.nilai.toLocaleString()}</Text>
+  const renderItem = ({ item }: { item: BarangHistory }) => (
+    <Card style={styles.itemCard}>
+      <View style={styles.itemContainer}>
+        <List.Icon icon="package-variant" color={Colors.BUTTON_PRIMARY} />
+        <View style={styles.itemContent}>
+          <Text style={styles.itemTitle}>{item.nama}</Text>
+          <Text style={styles.itemSub}>{`Masuk: ${new Date(
+            item.tgl_masuk
+          ).toLocaleDateString()}`}</Text>
+          {item.tgl_keluar && (
+            <Text style={styles.itemSub}>{`Keluar: ${new Date(
+              item.tgl_keluar
+            ).toLocaleDateString()}`}</Text>
+          )}
+          <Text style={styles.itemStatus}>{`Status: ${item.status}`}</Text>
+          <Text style={styles.itemCategory}>{`Kategori: ${item.kategori}`}</Text>
         </View>
-        <Text>Status: {item.status}</Text>
-        <Divider style={{ marginVertical: 8 }} />
-        <Text>Jumlah Barang: {item.jumlah}</Text>
-        {/* daftar nama & harga satuan */}
-        {item.items.map((it) => (
-          <View
-            key={it.id}
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginTop: 4,
-            }}
-          >
-            <Text style={{ fontWeight: "600" }}>{it.nama}</Text>
-            <Text>
-              {it.jumlah} × Rp{it.harga_satuan.toLocaleString()}
-            </Text>
-          </View>
-        ))}
-      </Card.Content>
+        <Text style={styles.itemPrice}>Rp{item.harga.toLocaleString()}</Text>
+      </View>
+      <Divider />
     </Card>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile Penitip</Text>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <Appbar.Header style={styles.appbar}>
+        <Appbar.BackAction onPress={() => {}} />
+        <Appbar.Content title="Profil Penitip" />
+      </Appbar.Header>
 
-      <View style={styles.profileContainer}>
+      <View style={styles.profileSection}>
         {loadingProfile ? (
           <ActivityIndicator size="large" color={Colors.BUTTON_PRIMARY} />
         ) : profile ? (
-          <>
-            <Text style={styles.name}>{profile.name}</Text>
-            <Text style={styles.email}>{profile.email}</Text>
-            <Text style={styles.value}>
-              Saldo: Rp{profile.saldo.toLocaleString()}
-            </Text>
-            <Text style={styles.value}>Poin: {profile.point}</Text>
-          </>
+          <Card style={styles.profileCard}>
+            <Card.Title
+              title={profile.name}
+              subtitle={profile.email}
+              left={(props) => <Avatar.Text {...props} label={profile.name.charAt(0)} />}
+            />
+            <Card.Content style={styles.statsRow}>
+              <View style={styles.statBlock}>
+                <Text style={styles.statLabel}>Saldo</Text>
+                <Text style={styles.statValue}>Rp{profile.saldo.toLocaleString()}</Text>
+              </View>
+              <View style={styles.statBlock}>
+                <Text style={styles.statLabel}>Poin</Text>
+                <Text style={styles.statValue}>{profile.point}</Text>
+              </View>
+            </Card.Content>
+          </Card>
         ) : (
-          <Text>Profil tidak tersedia</Text>
+          <Text style={styles.error}>Profil tidak tersedia</Text>
         )}
       </View>
 
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowStartPicker(true)}
-        >
-          <Text>Dari: {startDate.toLocaleDateString()}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowEndPicker(true)}
-        >
-          <Text>Sampai: {endDate.toLocaleDateString()}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.applyButton} onPress={loadTitipan}>
-          <Text style={styles.applyButtonText}>Terapkan</Text>
-        </TouchableOpacity>
+      <View style={styles.listSection}>
+        <Text style={styles.sectionTitle}>Riwayat Barang Titipan</Text>
+        {loadingB ? (
+          <ActivityIndicator size="large" color={Colors.BUTTON_PRIMARY} />
+        ) : errorB ? (
+          <Text style={styles.error}>{errorB}</Text>
+        ) : (
+          <FlatList
+            data={barangs}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
       </View>
-
-      {showStartPicker && (
-        <DateTimePicker
-          value={startDate}
-          mode="date"
-          display="default"
-          onChange={(_, date) => {
-            setShowStartPicker(false);
-            date && setStartDate(date);
-          }}
-        />
-      )}
-      {showEndPicker && (
-        <DateTimePicker
-          value={endDate}
-          mode="date"
-          display="default"
-          onChange={(_, date) => {
-            setShowEndPicker(false);
-            date && setEndDate(date);
-          }}
-        />
-      )}
-
-      {loadingT ? (
-        <ActivityIndicator
-          size="large"
-          color={Colors.BUTTON_PRIMARY}
-          style={{ marginTop: 20 }}
-        />
-      ) : errorT ? (
-        <Text style={styles.error}>{errorT}</Text>
-      ) : (
-        <FlatList
-          data={titipans}
-          keyExtractor={(i) => i.id.toString()}
-          renderItem={renderTitipan}
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-          contentContainerStyle={{ paddingBottom: 80, marginTop: 12 }}
-        />
-      )}
     </SafeAreaView>
   );
-}
+};
+
+export default PenitipProfilePage;
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.WHITE },
-  header: {
-    height: 56,
-    backgroundColor: Colors.BUTTON_PRIMARY,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: { color: Colors.WHITE, fontSize: 20, fontWeight: "700" },
+  container: { flex: 1, backgroundColor: "#F0F2F5" },
+  appbar: { backgroundColor: Colors.BUTTON_PRIMARY },
+  profileSection: { padding: 16 },
+  profileCard: { elevation: 3, borderRadius: 12 },
+  statsRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 8 },
+  statBlock: { alignItems: "center" },
+  statLabel: { fontSize: 12, color: Colors.GRAY },
+  statValue: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },
+  listSection: { flex: 1, paddingHorizontal: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 8 },
+  listContainer: { paddingBottom: 24 },
 
-  profileContainer: {
-    backgroundColor: Colors.WHITE,
-    padding: 16,
-    margin: 16,
-    borderRadius: 12,
-    elevation: 3,
-  },
-  name: { fontSize: 18, fontWeight: "700", color: Colors.TEXT_DARK },
-  email: { fontSize: 14, color: Colors.GRAY, marginTop: 4 },
-  value: { fontSize: 14, color: Colors.TEXT_DARK, marginTop: 6 },
-
-  filterContainer: {
+  itemCard: { marginVertical: 6, borderRadius: 10, overflow: "hidden" },
+  itemContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 16,
-  },
-  dateButton: {
-    flex: 1,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: Colors.GRAY,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  applyButton: {
-    backgroundColor: Colors.BUTTON_PRIMARY,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-  applyButtonText: { color: Colors.WHITE, fontWeight: "600" },
-
-  card: {
-    marginHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: Colors.WHITE,
-    elevation: 2,
     padding: 12,
   },
-  txHeader: { flexDirection: "row", justifyContent: "space-between" },
-  kode: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },
-  nilai: { fontSize: 16, fontWeight: "600", color: Colors.BUTTON_PRIMARY },
+  itemContent: { flex: 1, marginLeft: 8 },
+  itemTitle: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },
+  itemSub: { fontSize: 12, color: Colors.GRAY, marginTop: 2 },
+  itemStatus: { fontSize: 12, marginTop: 4 },
+  itemCategory: { fontSize: 12, fontStyle: "italic", marginTop: 2 },
+  itemPrice: { fontSize: 16, fontWeight: "700", color: Colors.BUTTON_PRIMARY },
+  actions: { justifyContent: "flex-end", padding: 8 },
 
-  error: { color: "red", textAlign: "center", marginTop: 20 },
+  error: { color: "#D32F2F", textAlign: "center", marginTop: 20 },
 });
