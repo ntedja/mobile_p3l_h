@@ -1,17 +1,17 @@
 import axios from "axios";
 import { getToken } from "./apiAuth";
 
-const API_BASE_URL = "http://192.168.18.73:8000/api";
+const API_BASE_URL = "http://10.31.240.42:8000/api";
 
 const hunterApi = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
-// Interceptor sinkron — pakai token yang sudah di-cache di apiAuth.tsx
 hunterApi.interceptors.request.use(
   (config) => {
     const token = getToken();
+    console.log("Using token:", token);
     if (token) {
       config.headers = {
         ...(config.headers ?? {}),
@@ -21,7 +21,10 @@ hunterApi.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error("Request interceptor error:", error);
+    return Promise.reject(error);
+  }
 );
 
 export type HunterProfile = {

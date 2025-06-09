@@ -22,7 +22,7 @@ export type RootStackParamList = {
 
 export const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export const API_BASE_URL = "http://10.41.244.79:8000/api";
+export const API_BASE_URL = "http://10.31.240.42:8000/api";
 
 export type Product = {
   id: number;
@@ -41,7 +41,7 @@ type TopSeller = {
 };
 
 // **Perbaikan di sini:**
-// const API_BASE_URL = "http://10.41.244.79:8000/api";
+// const API_BASE_URL = "http://10.31.240.42:8000/api";
 
 function HomePage() {
   const navigation =

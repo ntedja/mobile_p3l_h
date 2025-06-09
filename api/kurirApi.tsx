@@ -3,7 +3,7 @@
 import axios from "axios";
 import { getToken } from "./apiAuth";
 
-const API_BASE_URL = "http://10.41.244.79:8000/api";
+const API_BASE_URL = "http://10.31.240.42:8000/api";
 
 const kurirApi = axios.create({
   baseURL: API_BASE_URL,
