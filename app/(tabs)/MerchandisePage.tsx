@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-const API_BASE_URL = "http://192.168.0.100:8000/api";
+const API_BASE_URL = "http://10.41.244.79:8000/api";
 
 export type Merchandise = {
   ID_MERCHANDISE: number;
@@ -259,8 +259,8 @@ export default function MerchandisePage() {
 
                 if (response.status === 201) {
                   Alert.alert(
-                    "Success",
-                    `You have successfully claimed ${merchandise.NAMA_MERCHANDISE}!`
+                    "Berhasil!",
+                    `Kamu berhasil klaim merchandise ${merchandise.NAMA_MERCHANDISE}!`
                   );
                   await fetchData();
                 }

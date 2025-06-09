@@ -16,13 +16,22 @@ export default function ProfileSwitcher() {
 
   useEffect(() => {
     const loadData = async () => {
-      const storedRole = await AsyncStorage.getItem("role");
-      const storedJabatan = await AsyncStorage.getItem("jabatan");
-      const token = await AsyncStorage.getItem("token");
-      setRole(storedRole);
-      setJabatan(storedJabatan);
-      setIsLoggedIn(!!token);
-      setLoading(false);
+      try {
+        const storedRole = await AsyncStorage.getItem("role");
+        const storedJabatan = await AsyncStorage.getItem("jabatan");
+        const token = await AsyncStorage.getItem("token");
+
+        console.log("Stored Role:", storedRole); 
+        console.log("Stored Jabatan:", storedJabatan);
+
+        setRole(storedRole);
+        setJabatan(storedJabatan);
+        setIsLoggedIn(!!token);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
