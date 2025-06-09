@@ -2,12 +2,12 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Colors from "../services/Colors";
 
@@ -15,7 +15,9 @@ export default function Onboarding3() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors.ONBOARD3_BG }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: Colors.ONBOARD3_BG }]}
+    >
       <View style={styles.imageWrapper}>
         <Image
           source={require("../assets/images/onboarding3.png")}
@@ -27,7 +29,8 @@ export default function Onboarding3() {
       <View style={styles.textWrapper}>
         <Text style={styles.heading}>Belanja Cerdas & Ramah Lingkungan</Text>
         <Text style={styles.subtext}>
-          Temukan barang keren dengan harga miring. Kurangi limbah, jaga bumi, dan tetap stylish!
+          Temukan barang keren dengan harga miring. Kurangi limbah, jaga bumi,
+          dan tetap stylish!
         </Text>
       </View>
 
@@ -41,6 +44,7 @@ export default function Onboarding3() {
       <TouchableOpacity
         style={[styles.button, { backgroundColor: Colors.BUTTON_TERTIARY }]}
         onPress={() => router.push("/login")}
+        // onPress={() => router.push("/(tabs)/HomePage")}
       >
         <Text style={styles.buttonText}>Finish →</Text>
       </TouchableOpacity>

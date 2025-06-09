@@ -1,14 +1,35 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Product } from "../app/(tabs)/HomePage";
 
-export default function ProductGrid({ products }: { products: any[] }) {
+type ProductGridProps = {
+  products: Product[];
+  onProductPress: (productId: number) => void;
+};
+
+export default function ProductGrid({
+  products,
+  onProductPress,
+}: ProductGridProps) {
   return (
-    <View style={styles.grid}>
-      {products.map((p, i) => (
-        <TouchableOpacity key={i} style={styles.item}>
-          <Image source={{ uri: p.image }} style={styles.image} />
-          <Text style={styles.name}>{p.name}</Text>
-          <Text style={styles.price}>{p.price}</Text>
-          <Text style={styles.category}>{p.category}</Text>
+    <View style={styles.container}>
+      {products.map((product) => (
+        <TouchableOpacity
+          key={product.id}
+          style={styles.productCard}
+          onPress={() => onProductPress(product.id)}
+        >
+          <Image
+            source={{ uri: product.image }}
+            style={styles.productImage}
+            resizeMode="contain"
+          />
+          <View style={styles.productInfo}>
+            <Text style={styles.productName} numberOfLines={2}>
+              {product.name}
+            </Text>
+            <Text style={styles.productPrice}>{product.price}</Text>
+            <Text style={styles.productCategory}>{product.category}</Text>
+          </View>
         </TouchableOpacity>
       ))}
     </View>
@@ -16,22 +37,39 @@ export default function ProductGrid({ products }: { products: any[] }) {
 }
 
 const styles = StyleSheet.create({
-  grid: {
+  container: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
     justifyContent: "space-between",
   },
-  item: {
-    width: "47%",
+  productCard: {
+    width: "48%",
     marginBottom: 16,
+    backgroundColor: "white",
+    borderRadius: 8,
+    overflow: "hidden",
+    elevation: 2,
   },
-  image: {
+  productImage: {
     width: "100%",
-    height: 100,
-    borderRadius: 12,
+    height: 120,
+    backgroundColor: "#F5F5F5",
   },
-  name: { fontWeight: "bold", marginTop: 4 },
-  price: { color: "#555" },
-  category: { fontSize: 12, color: "#888" },
+  productInfo: {
+    padding: 8,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  productPrice: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  productCategory: {
+    fontSize: 12,
+    color: "#666",
+  },
 });

@@ -16,13 +16,22 @@ import { Card, Divider } from "react-native-paper";
 
 import CategoryList from "../../components/CategoryList";
 import IntroHeader, { BadgeInfo } from "../../components/IntroHeader";
+import ProductDetailModal from "../../components/ProductDetailModal";
 import ProductGrid from "../../components/ProductGrid";
 import Colors from "../../services/Colors";
 import NotificationScreen from "./NotificationScreen";
 
-type RootStackParamList = { Home: undefined; Notifications: undefined };
+export type RootStackParamList = {
+  Home: undefined;
+  Notifications: undefined
+  ProductDetail: { productId: number };
+};
 
-type Product = {
+export const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export const API_BASE_URL = "http://10.41.244.79:8000/api";
+
+export type Product = {
   id: number;
   name: string;
   price: string;
@@ -38,10 +47,10 @@ type TopSeller = {
   to: string;
 };
 
-const API_BASE_URL = "http://192.168.100.96:8000/api";
-const Stack = createNativeStackNavigator<RootStackParamList>();
+// **Perbaikan di sini:**
+// const API_BASE_URL = "http://10.41.244.79:8000/api";
 
-export default function HomePage() {
+function HomePage() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [notificationCount, setNotificationCount] = useState(0);
@@ -50,6 +59,40 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("recent");
   const [topSellers, setTopSellers] = useState<TopSeller[]>([]);
   const [badge, setBadge] = useState<BadgeInfo | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+    null
+  );
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleProductPress = (productId: number) => {
+    setSelectedProductId(productId);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedProductId(null);
+  };
+
+  const handleRateProduct = async (productId: number, rating: number) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        throw new Error("User not authenticated");
+      }
+
+      await axios.post(
+        `${API_BASE_URL}/produk/${productId}/rate`,
+        { rating },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+    } catch (error) {
+      console.error("Error rating product:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -66,10 +109,9 @@ export default function HomePage() {
         .catch((err) => console.error("Fetch produk error:", err));
 
       axios
-        .get<{ count: number }>(
-          `${API_BASE_URL}/notifications/unread-count`,
-          { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
-        )
+        .get<{ count: number }>(`${API_BASE_URL}/notifications/unread-count`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        })
         .then((res) => setNotificationCount(res.data.count))
         .catch((err) => console.error("Fetch notifikasi error:", err));
 
@@ -89,7 +131,7 @@ export default function HomePage() {
     })();
   }, []);
 
-  const goToNotifications = () => navigation.navigate("Notifications");
+  const handleNotificationPress = () => navigation.navigate("Notifications");
 
   const filteredProducts =
     selectedCategory === "recent"
@@ -97,62 +139,52 @@ export default function HomePage() {
       : fetchedProducts.filter((p) => p.category === selectedCategory);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <IntroHeader
-        notificationCount={notificationCount}
-        onNotificationPress={goToNotifications}
-        badge={badge}
-      />
+    <>
+      <ScrollView style={styles.container}>
+        <IntroHeader
+          notificationCount={notificationCount}
+          onNotificationPress={handleNotificationPress}
+          badge={badge || undefined}
+        />
 
-      {/* Tentang ReuseMart */}
-      <Card style={styles.infoCard}>
-        <Card.Content>
-          <View style={styles.infoHeader}>
-            <Text style={styles.infoIcon}>ℹ️</Text>
-            <Text style={styles.infoTitle}>Tentang ReuseMart</Text>
-          </View>
-          <Text style={styles.infoText}>
-            ReuseMart adalah platform marketplace yang memfasilitasi penitipan
-            barang preloved dan donasi, memastikan setiap barang mendapat
-            kesempatan kedua. Temukan, titip, atau beli produk unik dengan mudah
-            di sini!
-          </Text>
-        </Card.Content>
-      </Card>
-
-      <Divider style={styles.sectionDivider} />
-
-      {topSellers.length > 0 && (
-        <View style={styles.topSection}>
-          <Text style={styles.sectionTitle}>Top Seller Bulan Ini</Text>
-          <View style={styles.sellerList}>
+        {/* Section Top Sellers */}
+        {topSellers.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Top Seller Bulan Ini</Text>
             {topSellers.map((ts) => (
-              <View key={ts.penitip_id} style={styles.sellerItem}>
-                <Text style={styles.sellerName}>{ts.penitip_name}</Text>
-                <Text style={styles.sellerDates}>
-                  {ts.from} – {ts.to}
+              <View key={ts.penitip_id} style={styles.topSellerItem}>
+                <Text style={styles.topSellerName}>
+                  {ts.penitip_name || ""}
+                </Text>
+                <Text style={styles.topSellerDates}>
+                  ({ts.from || ""} – {ts.to || ""})
                 </Text>
               </View>
             ))}
           </View>
-        </View>
-      )}
+        )}
 
-      <Divider style={styles.sectionDivider} />
+        <CategoryList
+          selected={selectedCategory}
+          setSelected={setSelectedCategory}
+        />
 
-      <CategoryList
-        selected={selectedCategory}
-        setSelected={setSelectedCategory}
+        <Text style={styles.title}>
+          {selectedCategory === "recent" ? "Produk Terkini" : selectedCategory}
+        </Text>
+        <ProductGrid
+          products={productList}
+          onProductPress={handleProductPress}
+        />
+      </ScrollView>
+
+      <ProductDetailModal
+        visible={modalVisible}
+        productId={selectedProductId}
+        onClose={handleCloseModal}
+        onRateProduct={handleRateProduct}
       />
-
-      <Text style={styles.title}>
-        {selectedCategory === "recent"
-          ? "Produk Terkini"
-          : `Kategori: ${selectedCategory}`}
-      </Text>
-
-      <ProductGrid products={filteredProducts} />
-    </ScrollView>
+    </>
   );
 }
 
@@ -168,6 +200,8 @@ export function HomeStack() {
     </Stack.Navigator>
   );
 }
+
+export default HomePage;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.WHITE },

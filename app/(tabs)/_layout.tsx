@@ -1,4 +1,3 @@
-// app/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import React from "react";
 import { Image } from "react-native";
@@ -43,7 +42,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ProfileSwitcher"
         options={{
-          title: "Profile",
+          tabBarLabel: "Profile",
           tabBarIcon: ({ focused, color, size }) => (
             <Image
               source={require("./../../assets/images/i3.png")}
