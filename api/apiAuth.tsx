@@ -22,19 +22,20 @@ const apiAuth = axios.create({
 
 let tokenValue: string | null = null;
 
-// Ambil token sekali saat app mulai (atau saat module ini di-import)
-(async () => {
+// Fungsi untuk menginisialisasi token saat app mulai
+export const initToken = async () => {
   try {
     const token = await AsyncStorage.getItem("token");
     tokenValue = token;
     if (token) {
-      // Set default header untuk apiAuth juga, jika diperlukan
       apiAuth.defaults.headers.common.Authorization = `Bearer ${token}`;
     }
   } catch (e) {
     console.warn("Gagal membaca token dari AsyncStorage", e);
   }
-})();
+};
+
+export const getToken = () => tokenValue;
 
 apiAuth.interceptors.request.use((config) => {
   if (!config.headers) {
@@ -56,10 +57,15 @@ export const login = async (email: string, password: string) => {
 
     tokenValue = token;
 
-    await AsyncStorage.multiSet([
-      ["token", token],
-      ["role", role],
-    ]);
+    // Simpan token, role, jabatan ke AsyncStorage
+    await AsyncStorage.setItem("token", token);
+    await AsyncStorage.setItem("role", role);
+    await AsyncStorage.setItem("jabatan", jabatan ?? "");
+
+    // Simpan ID_PEGAWAI jika role pegawai
+    if (role === "pegawai" && user?.ID_PEGAWAI) {
+      await AsyncStorage.setItem("pegawai_id", user.ID_PEGAWAI.toString());
+    }
 
     apiAuth.defaults.headers.common.Authorization = `Bearer ${token}`;
 
@@ -72,4 +78,8 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
   tokenValue = null;
   await AsyncStorage.removeItem("token");
+  await AsyncStorage.removeItem("role");
+  await AsyncStorage.removeItem("jabatan");
 };
+
+export default apiAuth;

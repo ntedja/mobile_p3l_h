@@ -40,7 +40,8 @@ type TopSeller = {
   to: string;
 };
 
-// const API_BASE_URL = "http://192.168.0.100:8000/api";
+// **Perbaikan di sini:**
+const API_BASE_URL = "http://192.168.18.73:8000/api";
 
 function HomePage() {
   const navigation =

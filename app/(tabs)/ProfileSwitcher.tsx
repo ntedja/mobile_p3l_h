@@ -1,37 +1,29 @@
-// app/(tabs)/ProfileSwitcher.tsx
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import BuyerProfilePage from "../(profile)/BuyerProfilePage";
+import HunterProfilePage from "../(profile)/HunterProfilePage";
 import KurirProfilePage from "../(profile)/KurirProfilePage";
 import PenitipProfilePage from "../(profile)/PenitipProfilePage";
 
 export default function ProfileSwitcher() {
   const [role, setRole] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const router = useRouter();
+  const [jabatan, setJabatan] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        const userRole = await AsyncStorage.getItem("role");
-
-        setIsLoggedIn(!!token);
-        setRole(userRole);
-      } catch (error) {
-        console.error("Error checking auth status:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    const loadRoleAndJabatan = async () => {
+      const storedRole = await AsyncStorage.getItem("role");
+      const storedJabatan = await AsyncStorage.getItem("jabatan");
+      setRole(storedRole);
+      setJabatan(storedJabatan);
+      setLoading(false);
     };
-
-    checkAuth();
+    loadRoleAndJabatan();
   }, []);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
@@ -66,14 +58,23 @@ export default function ProfileSwitcher() {
     );
   }
 
-  switch (role) {
-    case "pembeli":
-      return <BuyerProfilePage />;
-    case "penitip":
-      return <PenitipProfilePage />;
-    case "kurir":
-      return <KurirProfilePage />;
-    default:
-      return <BuyerProfilePage />;
+  if (role === "pembeli") {
+    return <BuyerProfilePage />;
   }
+
+  if (role === "penitip") {
+    return <PenitipProfilePage />;
+  }
+
+  if (role === "pegawai") {
+    if (jabatan?.toLowerCase() === "kurir") {
+      return <KurirProfilePage />;
+    }
+    if (jabatan?.toLowerCase() === "hunter") {
+      return <HunterProfilePage />;
+    }
+  }
+
+  // fallback
+  return <BuyerProfilePage />;
 }
