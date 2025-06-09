@@ -8,19 +8,23 @@ import KurirProfilePage from "../(profile)/KurirProfilePage";
 import PenitipProfilePage from "../(profile)/PenitipProfilePage";
 
 export default function ProfileSwitcher() {
+  const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
   const [jabatan, setJabatan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const loadRoleAndJabatan = async () => {
+    const loadData = async () => {
       const storedRole = await AsyncStorage.getItem("role");
       const storedJabatan = await AsyncStorage.getItem("jabatan");
+      const token = await AsyncStorage.getItem("token");
       setRole(storedRole);
       setJabatan(storedJabatan);
+      setIsLoggedIn(!!token);
       setLoading(false);
     };
-    loadRoleAndJabatan();
+    loadData();
   }, []);
 
   if (loading) {
@@ -47,9 +51,11 @@ export default function ProfileSwitcher() {
         <TouchableOpacity
           onPress={() => router.push("/login")}
           style={{
-            backgroundColor: "#007AFF",
+            backgroundColor: "#4CAF50",
             padding: 15,
             borderRadius: 5,
+            width: "100%",
+            alignItems: "center",
           }}
         >
           <Text style={{ color: "white", fontWeight: "bold" }}>Login</Text>
@@ -75,6 +81,5 @@ export default function ProfileSwitcher() {
     }
   }
 
-  // fallback
   return <BuyerProfilePage />;
 }

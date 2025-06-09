@@ -4,6 +4,7 @@ import axios, { AxiosError } from "axios";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -59,11 +60,14 @@ export default function MerchandisePage() {
     []
   );
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   const fetchUserData = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const role = await AsyncStorage.getItem("role");
+      setIsLoggedIn(!!token);
 
       if (token && role === "pembeli") {
         const userResponse = await axios.get<ApiResponse<PembeliData>>(
@@ -73,8 +77,6 @@ export default function MerchandisePage() {
           }
         );
 
-        console.log("Full user response:", userResponse.data);
-
         if (userResponse.data.success && userResponse.data.data) {
           const pembeliData = userResponse.data.data;
           setUserData({
@@ -82,32 +84,37 @@ export default function MerchandisePage() {
             role,
             points: pembeliData.POINT_LOYALITAS_PEMBELI,
           });
+          return true;
         }
       }
+      return false;
     } catch (error) {
-      if (error instanceof AxiosError) {
-        console.log(error.response?.data);
-      } else {
-        console.error("Unexpected error", error);
-      }
+      console.error("Error fetching user data:", error);
+      return false;
     }
   };
 
   const fetchMerchandises = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
-      if (!token) throw new Error("No authentication token");
+      if (!token) return;
 
-      const response = await axios.get<Merchandise[]>(
+      const response = await axios.get<ApiResponse<Merchandise[]>>(
         `${API_BASE_URL}/merchandises`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setMerchandises(response.data);
+
+      if (response.data.success) {
+        setMerchandises(response.data.data);
+      } else {
+        console.error("Failed to fetch merchandises:", response.data.message);
+      }
     } catch (error) {
-      console.error("Failed to fetch merchandises:", error);
-      throw error;
+      if (!(axios.isAxiosError(error) && error.response?.status === 401)) {
+        console.error("Failed to fetch merchandises:", error);
+      }
     }
   };
 
@@ -115,12 +122,7 @@ export default function MerchandisePage() {
     try {
       const token = await AsyncStorage.getItem("token");
       const role = await AsyncStorage.getItem("role");
-      if (!token || role !== "pembeli" || !userData.id) {
-        console.log(
-          "Skipping claim history fetch: missing token, role, or user ID"
-        );
-        return;
-      }
+      if (!token || role !== "pembeli" || !userData.id) return;
 
       const response = await axios.get<KlaimMerchandiseResponse[]>(
         `${API_BASE_URL}/klaim-merchandise`,
@@ -138,11 +140,6 @@ export default function MerchandisePage() {
           "Error",
           error.response?.data?.message || "Failed to load claim history"
         );
-      } else {
-        Alert.alert(
-          "Error",
-          "An unexpected error occurred while loading claim history"
-        );
       }
     }
   };
@@ -152,42 +149,39 @@ export default function MerchandisePage() {
       setLoading(true);
       setError(null);
 
-      await Promise.all([
-        fetchMerchandises(),
-        fetchUserData(),
-        fetchClaimHistory(),
-      ]);
-    } catch (err: unknown) {
-      let errorMessage = "Failed to load data. Please try again later.";
+      const userDataLoaded = await fetchUserData();
 
-      if (err instanceof AxiosError) {
-        console.error("Server error:", err.response?.data);
-        errorMessage = `Server error: ${err.response?.status}`;
-        if (err.response?.status === 500) {
-          errorMessage =
-            "Server is currently unavailable. Please try again later.";
-        }
-      } else if (err instanceof Error) {
-        console.error("Request setup error:", err.message);
-        errorMessage = err.message;
+      const token = await AsyncStorage.getItem("token");
+      const role = await AsyncStorage.getItem("role");
+
+      if (token && role === "pembeli" && userDataLoaded) {
+        await Promise.all([fetchMerchandises(), fetchClaimHistory()]);
       }
-
-      setError(errorMessage);
-      Alert.alert("Error", errorMessage);
+    } catch (err) {
+      if (!(axios.isAxiosError(err) && err.response?.status === 401)) {
+        setError("Failed to load data. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    const initializeData = async () => {
+      const userDataLoaded = await fetchUserData();
+      if (userDataLoaded) {
+        await Promise.all([fetchMerchandises(), fetchClaimHistory()]);
+      }
+      setLoading(false);
+    };
+
+    initializeData();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      fetchUserData();
-      fetchClaimHistory();
-    }, [])
+      fetchData();
+    }, [userData.id])
   );
 
   const retryFetch = async () => {
@@ -250,6 +244,7 @@ export default function MerchandisePage() {
             text: "Claim",
             onPress: async () => {
               try {
+                setIsClaiming(true);
                 const response = await axios.post<KlaimMerchandiseResponse>(
                   `${API_BASE_URL}/klaim-merchandise`,
                   {
@@ -269,13 +264,15 @@ export default function MerchandisePage() {
                   );
                   await fetchData();
                 }
-              } catch (error: unknown) {
+              } catch (error) {
                 console.error("Claim error:", error);
                 let errorMessage = "Failed to claim merchandise";
                 if (error instanceof AxiosError) {
                   errorMessage = error.response?.data?.message || errorMessage;
                 }
                 Alert.alert("Error", errorMessage);
+              } finally {
+                setIsClaiming(false);
               }
             },
           },
@@ -300,7 +297,23 @@ export default function MerchandisePage() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text>Loading merchandises...</Text>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <View style={styles.notLoggedInContainer}>
+        <Text style={styles.notLoggedInText}>
+          Anda belum login. Silakan login untuk melihat merchandise.
+        </Text>
+        <TouchableOpacity
+          style={styles.loginButton}
+          onPress={() => router.push("/login")}
+        >
+          <Text style={styles.loginButtonText}>Login</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -335,8 +348,9 @@ export default function MerchandisePage() {
               <TouchableOpacity
                 key={merch.ID_MERCHANDISE}
                 style={styles.card}
-                onPress={() => handleClaimMerchandise(merch)}
+                onPress={() => !isClaiming && handleClaimMerchandise(merch)}
                 activeOpacity={0.7}
+                disabled={isClaiming}
               >
                 {merch.GAMBAR ? (
                   <Image
@@ -356,7 +370,9 @@ export default function MerchandisePage() {
                 <Text style={styles.stock}>
                   {merch.JUMLAH > 0 ? `Stock: ${merch.JUMLAH}` : "Out of stock"}
                 </Text>
-                {userData.role === "pembeli" ? (
+                {isClaiming ? (
+                  <ActivityIndicator size="small" color="#4CAF50" />
+                ) : userData.role === "pembeli" ? (
                   <Text
                     style={[
                       styles.claimText,
@@ -382,18 +398,17 @@ export default function MerchandisePage() {
         )}
       </ScrollView>
 
-      {/* Floating History Button */}
       {userData.role === "pembeli" && (
         <TouchableOpacity
           style={styles.floatingButton}
           onPress={() => setHistoryModalVisible(true)}
           activeOpacity={0.7}
+          disabled={isClaiming}
         >
           <Ionicons name="time-outline" size={24} color="white" />
         </TouchableOpacity>
       )}
 
-      {/* Claim History Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -441,7 +456,7 @@ export default function MerchandisePage() {
                       </Text>
                       {claim.TGL_PENGAMBILAN && (
                         <Text style={styles.historyPickedDate}>
-                          Picked: {formatDate(claim.TGL_PENGAMBILAN)}
+                          Diambil: {formatDate(claim.TGL_PENGAMBILAN)}
                         </Text>
                       )}
                     </View>
@@ -467,6 +482,30 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: "#FFF7E2",
+  },
+  notLoggedInContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#FFF7E2",
+  },
+  notLoggedInText: {
+    marginBottom: 20,
+    textAlign: "center",
+    fontSize: 16,
+  },
+  loginButton: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 5,
+    width: "100%",
+    alignItems: "center",
+  },
+  loginButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   title: {
     fontSize: 24,
