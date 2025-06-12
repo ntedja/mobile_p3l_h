@@ -17,8 +17,7 @@ type Notification = {
 };
 
 export default function NotificationScreen() {
-  const API_BASE_URL = "http://10.53.11.177:8000/api";
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const API_BASE_URL = "http://172.16.50.143:8000/api";  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

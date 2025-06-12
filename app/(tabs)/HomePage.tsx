@@ -38,8 +38,7 @@ type TopSeller = {
   to: string;
 };
 
-const API_BASE_URL = "http://10.53.11.177:8000/api";
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const API_BASE_URL = "http://172.16.50.143:8000/api";const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function HomePage() {
   const navigation =
