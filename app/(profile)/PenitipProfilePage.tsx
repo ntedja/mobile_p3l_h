@@ -96,9 +96,11 @@ const PenitipProfilePage: FC = () => {
         ) : profile ? (
           <Card style={styles.profileCard}>
             <Card.Title
-              title={profile.name}
-              subtitle={profile.email}
-              left={(props) => <Avatar.Text {...props} label={profile.name.charAt(0)} />}
+              title={profile?.name ?? "-"}
+              subtitle={profile?.email ?? "-"}
+              left={(props) => (
+                <Avatar.Text {...props} label={profile?.name?.charAt(0) ?? "?"} />
+              )}
             />
             <Card.Content style={styles.statsRow}>
               <View style={styles.statBlock}>

@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import {
-  NativeStackNavigationProp,
-  createNativeStackNavigator,
+    NativeStackNavigationProp,
+    createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
@@ -38,8 +38,7 @@ type TopSeller = {
   to: string;
 };
 
-export const API_BASE_URL = "http://10.31.241.50:8000/api";
-const Stack = createNativeStackNavigator<RootStackParamList>();
+export const API_BASE_URL = "http://172.16.98.54:8000/api";const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function HomePage() {
   const navigation =

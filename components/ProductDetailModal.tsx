@@ -15,6 +15,7 @@ import {
 
 import { API_BASE_URL } from "../app/(tabs)/HomePage";
 
+
 type ProductDetail = {
   id: number;
   name: string;
