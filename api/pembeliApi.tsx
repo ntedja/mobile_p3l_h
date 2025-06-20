@@ -122,7 +122,7 @@ export async function fetchRiwayatPesanan(
     return p.data.map((raw: any) => ({
       id: raw.id,
       kode: raw.kode,
-      tanggal: raw.tgl_pesan_pembelian,
+      tanggal: raw.tanggal,
       status_transaksi: raw.status_transaksi,
       total: raw.total ?? 0,
       item_count: raw.item_count ?? 0,
@@ -164,7 +164,7 @@ export async function fetchPesananDetail(id: number): Promise<PesananDetail> {
     return {
       id: raw.id,
       kode: raw.kode,
-      tanggal: raw.tgl_pesan_pembelian,
+      tanggal: raw.tanggal,
       status_transaksi: raw.status_transaksi,
       total: raw.total_bayar,
       alamat_pengiriman: raw.alamat_pengiriman,

@@ -1,7 +1,7 @@
 // api/apiAuth.tsx
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import axios, { AxiosRequestHeaders } from "axios"; // ✅ impor tipe header
 
 interface LoginResponse {
   token: string;
@@ -22,7 +22,7 @@ const apiAuth = axios.create({
 
 let tokenValue: string | null = null;
 
-// Fungsi untuk menginisialisasi token saat app mulai
+// ✅ Fungsi untuk menginisialisasi token saat app mulai
 export const initToken = async () => {
   try {
     const token = await AsyncStorage.getItem("token");
@@ -37,9 +37,10 @@ export const initToken = async () => {
 
 export const getToken = () => tokenValue;
 
+// ✅ Interceptor untuk menyisipkan token
 apiAuth.interceptors.request.use((config) => {
   if (!config.headers) {
-    config.headers = {};
+    config.headers = {} as AxiosRequestHeaders;
   }
   if (tokenValue) {
     config.headers.Authorization = `Bearer ${tokenValue}`;
@@ -47,26 +48,29 @@ apiAuth.interceptors.request.use((config) => {
   return config;
 });
 
+// ✅ Fungsi login
 export const login = async (email: string, password: string) => {
   try {
     const response = await apiAuth.post<LoginResponse>("/login", {
       email,
       password,
     });
+
     const { token, role, user, jabatan } = response.data;
 
     tokenValue = token;
 
-    // Simpan token, role, jabatan ke AsyncStorage
+    // Simpan ke AsyncStorage
     await AsyncStorage.setItem("token", token);
     await AsyncStorage.setItem("role", role);
     await AsyncStorage.setItem("jabatan", jabatan ?? "");
 
-    // Simpan ID_PEGAWAI jika role pegawai
+    // Simpan ID pegawai jika ada
     if (role === "pegawai" && user?.ID_PEGAWAI) {
       await AsyncStorage.setItem("pegawai_id", user.ID_PEGAWAI.toString());
     }
 
+    // Set token ke header default
     apiAuth.defaults.headers.common.Authorization = `Bearer ${token}`;
 
     return response.data;
@@ -75,6 +79,7 @@ export const login = async (email: string, password: string) => {
   }
 };
 
+// ✅ Fungsi logout
 export const logout = async () => {
   tokenValue = null;
   await AsyncStorage.removeItem("token");
