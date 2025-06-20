@@ -1,11 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://10.31.241.50:8000/api";
-const api = axios.create({
+const API_BASE_URL = "http://172.16.98.54:8000/api";const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json", 
     Accept: "application/json",
   },
 });
@@ -77,11 +76,11 @@ export async function fetchPenitipProfile(): Promise<PenitipProfile> {
   if (res.data.success) {
     const raw = res.data.data;
     return {
-      id: raw.id,
-      name: raw.name,
-      email: raw.email,
-      saldo: raw.saldo ?? 0,
-      point: raw.point ?? 0,
+      id: raw.ID_PENITIP,
+      name: raw.NAMA_PENITIP,
+      email: raw.EMAIL_PENITIP,
+      saldo: raw.SALDO_PENITIP ?? 0,
+      point: raw.POINT_LOYALITAS_PENITIP ?? 0,
     };
   }
   throw new Error(res.data.message || "Gagal mengambil profil Penitip");

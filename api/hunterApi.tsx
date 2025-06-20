@@ -1,29 +1,31 @@
+// api/hunterApi.tsx
+
 import axios from "axios";
 import { getToken } from "./apiAuth";
 
-const API_BASE_URL = "http://10.31.241.50:8000/api";
+const API_BASE_URL = "http://172.16.98.54:8000/api";
 
 const hunterApi = axios.create({
   baseURL: API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Interceptor sinkron — pakai token yang sudah di-cache di apiAuth.tsx
+// ✅ Interceptor sinkron — pakai token dari cache (tanpa ganti object header)
 hunterApi.interceptors.request.use(
   (config) => {
     const token = getToken();
-    if (token) {
-      config.headers = {
-        ...(config.headers ?? {}),
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      };
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers['Accept'] = 'application/json';
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// ✅ Tipe untuk profil pegawai (hunter)
 export type HunterProfile = {
   ID_PEGAWAI: number;
   NAMA_PEGAWAI: string;
@@ -35,6 +37,7 @@ export type HunterProfile = {
   };
 };
 
+// ✅ Tipe untuk detail komisi
 export type KomisiDetail = {
   ID_KOMISI: number;
   JENIS_KOMISI: string;
@@ -43,13 +46,13 @@ export type KomisiDetail = {
   created_at: string;
 };
 
-// Fetch profile
+// ✅ Ambil profil hunter berdasarkan ID
 export async function fetchHunterProfile(id: number): Promise<HunterProfile> {
   const response = await hunterApi.get<HunterProfile>(`/pegawai/${id}/profile`);
   return response.data;
 }
 
-// Fetch komisi history
+// ✅ Ambil daftar riwayat komisi hunter
 export async function fetchHunterKomisi(id: number): Promise<KomisiDetail[]> {
   const response = await hunterApi.get<KomisiDetail[]>(`/pegawai/${id}/komisi`);
   return response.data;
