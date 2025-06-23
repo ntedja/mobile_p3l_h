@@ -3,7 +3,7 @@
 import axios from "axios";
 import { getToken } from "./apiAuth";
 
-const API_BASE_URL = "http://172.16.49.37:8000/api";
+const API_BASE_URL = "https://dashboard.reusemart.site/api";
 
 const kurirApi = axios.create({
   baseURL: API_BASE_URL,
@@ -15,8 +15,8 @@ kurirApi.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token && config.headers) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-      config.headers['Accept'] = 'application/json';
+      config.headers["Authorization"] = `Bearer ${token}`;
+      config.headers["Accept"] = "application/json";
     }
     return config;
   },
@@ -50,8 +50,12 @@ export async function fetchKurirProfile(id: number): Promise<KurirProfile> {
 }
 
 // ✅ Fetch daftar tugas aktif
-export async function fetchKurirHistory(id: number): Promise<TugasPengiriman[]> {
-  const response = await kurirApi.get<TugasPengiriman[]>(`/pegawai/${id}/tugas`);
+export async function fetchKurirHistory(
+  id: number
+): Promise<TugasPengiriman[]> {
+  const response = await kurirApi.get<TugasPengiriman[]>(
+    `/pegawai/${id}/tugas`
+  );
   return response.data;
 }
 
@@ -61,8 +65,12 @@ export async function updateStatusPengiriman(id: number): Promise<void> {
 }
 
 // ✅ Fetch daftar tugas yang sudah selesai
-export async function fetchKurirHistorySelesai(id: number): Promise<TugasPengiriman[]> {
-  const response = await kurirApi.get<TugasPengiriman[]>(`/pegawai/${id}/tugas-history`);
+export async function fetchKurirHistorySelesai(
+  id: number
+): Promise<TugasPengiriman[]> {
+  const response = await kurirApi.get<TugasPengiriman[]>(
+    `/pegawai/${id}/tugas-history`
+  );
   return response.data;
 }
 

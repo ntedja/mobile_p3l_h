@@ -1,140 +1,138 @@
-// app/(tabs)/NotificationScreen.tsx
+import { useState, useEffect, useRef } from "react";
+import { Text, View, Button, Platform } from "react-native";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Divider, List } from "react-native-paper";
-import Colors from "../../services/Colors";
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
-type Notification = {
-  id: number;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  productId?: number;
-};
-
-export default function NotificationScreen() {
-  const API_BASE_URL = "http://172.16.49.37:8000/api";
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadNotifications();
-  }, []);
-
-  const loadNotifications = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      // Jika backend Anda memakai /api/notifications (bukan /user/notifications),
-      // ubah URL di bawah sesuai:
-      const url = `${API_BASE_URL}/notifications`;
-      const response = await axios.get<{
-        success: boolean;
-        data: Notification[];
-        message?: string;
-      }>(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
-
-      if (response.data.success && Array.isArray(response.data.data)) {
-        setNotifications(response.data.data);
-      } else {
-        console.warn("Respons notifikasi tidak seperti yang diharapkan");
-      }
-    } catch (error: any) {
-      console.error("Gagal fetch notifikasi:", error);
-    } finally {
-      setLoading(false);
-    }
+async function sendPushNotification(expoPushToken: string) {
+  const message = {
+    to: expoPushToken,
+    sound: "default",
+    title: "Original Title",
+    body: "And here is the body!",
+    data: { someData: "goes here" },
   };
 
-  const markAsRead = async (id: number) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      // Sesuaikan endpoint jika berbeda:
-      const url = `${API_BASE_URL}/notifications/${id}/read`;
-      await axios.patch(
-        url,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        }
-      );
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
-    } catch (err) {
-      console.error("Gagal update notifikasi:", err);
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <Text>Memuat notifikasi...</Text>
-      </View>
-    );
-  }
-
-  if (notifications.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text>Tidak ada notifikasi</Text>
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView style={styles.container}>
-      {notifications.map((notification) => (
-        <View key={notification.id}>
-          <List.Item
-            title={notification.title}
-            description={notification.message}
-            left={(props) => (
-              <List.Icon
-                {...props}
-                icon={notification.isRead ? "email-open" : "email"}
-                color={notification.isRead ? "#888" : Colors.BUTTON_PRIMARY}
-              />
-            )}
-            onPress={() => markAsRead(notification.id)}
-            style={[
-              styles.notificationItem,
-              !notification.isRead && styles.unreadNotification,
-            ]}
-          />
-          <Divider />
-        </View>
-      ))}
-    </ScrollView>
-  );
+  await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Accept-encoding": "gzip, deflate",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(message),
+  });
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: Colors.WHITE,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  notificationItem: {
-    paddingVertical: 12,
-  },
-  unreadNotification: {
-    backgroundColor: "#F5F5FF",
-  },
-});
+function handleRegistrationError(errorMessage: string) {
+  alert(errorMessage);
+  throw new Error(errorMessage);
+}
+
+async function registerForPushNotificationsAsync() {
+  if (Platform.OS === "android") {
+    Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF231F7C",
+    });
+  }
+
+  if (Device.isDevice) {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== "granted") {
+      handleRegistrationError(
+        "Permission not granted to get push token for push notification!"
+      );
+      return;
+    }
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId;
+    if (!projectId) {
+      handleRegistrationError("Project ID not found");
+    }
+    try {
+      const pushTokenString = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data;
+      console.log(pushTokenString);
+      return pushTokenString;
+    } catch (e: unknown) {
+      handleRegistrationError(`${e}`);
+    }
+  } else {
+    handleRegistrationError("Must use physical device for push notifications");
+  }
+}
+
+export default function App() {
+  const [expoPushToken, setExpoPushToken] = useState("");
+  const [notification, setNotification] = useState<
+    Notifications.Notification | undefined
+  >(undefined);
+
+  useEffect(() => {
+    registerForPushNotificationsAsync()
+      .then((token) => setExpoPushToken(token ?? ""))
+      .catch((error: any) => setExpoPushToken(`${error}`));
+
+    const notificationListener = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        setNotification(notification);
+      }
+    );
+
+    const responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log(response);
+      });
+
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
+  }, []);
+
+  return (
+    <View
+      style={{ flex: 1, alignItems: "center", justifyContent: "space-around" }}
+    >
+      <Text>Your Expo push token: {expoPushToken}</Text>
+      <View style={{ alignItems: "center", justifyContent: "center" }}>
+        <Text>
+          Title: {notification && notification.request.content.title}{" "}
+        </Text>
+        <Text>Body: {notification && notification.request.content.body}</Text>
+        <Text>
+          Data:{" "}
+          {notification && JSON.stringify(notification.request.content.data)}
+        </Text>
+      </View>
+      <Button
+        title="Press to Send Notification"
+        onPress={async () => {
+          await sendPushNotification(expoPushToken);
+        }}
+      />
+    </View>
+  );
+}

@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import {
-    NativeStackNavigationProp,
-    createNativeStackNavigator,
+  NativeStackNavigationProp,
+  createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ type RootStackParamList = {
 
 export const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export const API_BASE_URL = "http://172.16.49.37:8000/api";
+export const API_BASE_URL = "https://dashboard.reusemart.site/api";
 
 export type Product = {
   id: number;
@@ -43,7 +43,7 @@ type TopSeller = {
 };
 
 // **Perbaikan di sini:**
-// const API_BASE_URL = "http://172.16.49.37:8000/api";
+// const API_BASE_URL = "https://dashboard.reusemart.site/api";
 
 export default function HomePage() {
   const navigation =

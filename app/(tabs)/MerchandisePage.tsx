@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-const API_BASE_URL = "http://172.16.49.37:8000/api";
+const API_BASE_URL = "https://dashboard.reusemart.site/api";
 
 export type Merchandise = {
   ID_MERCHANDISE: number;
