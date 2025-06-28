@@ -10,11 +10,11 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
 import { API_BASE_URL } from "../app/(tabs)/HomePage";
-
 
 type ProductDetail = {
   id: number;
@@ -40,7 +40,7 @@ type ProductDetailModalProps = {
   onRateProduct: (productId: number, rating: number) => Promise<void>;
 };
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 export default function ProductDetailModal({
   visible,
@@ -52,6 +52,7 @@ export default function ProductDetailModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageLoading, setImageLoading] = useState(true);
 
   useEffect(() => {
     if (productId && visible) {
@@ -73,9 +74,15 @@ export default function ProductDetailModal({
       );
 
       setProduct(response.data);
-    } catch (err) {
-      console.error("Failed to fetch product details:", err);
-      setError("Failed to load product details. Please try again.");
+    } catch (error: any) {
+      console.error("Failed to fetch product details:", error);
+      if (axios.isAxiosError(error)) {
+        setError(
+          error.message || "Failed to load product details. Please try again."
+        );
+      } else {
+        setError("Failed to load product details. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -85,7 +92,12 @@ export default function ProductDetailModal({
     if (!productId) return;
     try {
       await onRateProduct(productId, rating);
-      fetchProductDetail();
+      setProduct((prevProduct) => {
+        if (prevProduct) {
+          return { ...prevProduct, rating: rating };
+        }
+        return prevProduct;
+      });
     } catch (err) {
       console.error("Failed to rate product:", err);
     }
@@ -112,122 +124,171 @@ export default function ProductDetailModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
-      transparent={false}
+      animationType="fade"
+      transparent={true}
       onRequestClose={onClose}
     >
-      <ScrollView style={styles.container}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <AntDesign name="close" size={24} color="black" />
-        </TouchableOpacity>
-
-        {loading && <Text style={styles.loadingText}>Loading...</Text>}
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
-
-        {product && (
-          <>
-            {/* Product Images */}
-            <View style={styles.imageContainer}>
-              {product.images.length > 1 && (
-                <TouchableOpacity
-                  style={styles.navButtonLeft}
-                  onPress={prevImage}
-                >
-                  <AntDesign name="left" size={24} color="white" />
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalContainer}>
+              <ScrollView>
+                <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                  <AntDesign name="close" size={24} color="black" />
                 </TouchableOpacity>
-              )}
-              <Image
-                source={{ uri: product.images[currentImageIndex] }}
-                style={styles.productImage}
-                resizeMode="contain"
-              />
-              {product.images.length > 1 && (
-                <TouchableOpacity
-                  style={styles.navButtonRight}
-                  onPress={nextImage}
-                >
-                  <AntDesign name="right" size={24} color="white" />
-                </TouchableOpacity>
-              )}
-              <Text style={styles.imageCounter}>
-                {currentImageIndex + 1}/{product.images.length}
-              </Text>
-            </View>
 
-            {/* Product Info */}
-            <View style={styles.infoContainer}>
-              <Text style={styles.productName}>{product.name}</Text>
-              <Text style={styles.productPrice}>{product.price}</Text>
+                {loading && <Text style={styles.loadingText}>Loading...</Text>}
 
-              <View style={styles.ratingContainer}>
-                <Text style={styles.sectionTitle}>Rating Produk:</Text>
-                <View style={styles.starsContainer}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <TouchableOpacity
-                      key={star}
-                      onPress={() => handleRate(star)}
-                    >
-                      <AntDesign
-                        name={star <= product.rating ? "star" : "staro"}
-                        size={24}
-                        color={star <= product.rating ? "#FFD700" : "#CCCCCC"}
+                {error && <Text style={styles.errorText}>{error}</Text>}
+
+                {product && (
+                  <>
+                    {/* Product Images */}
+                    <View style={styles.imageContainer}>
+                      {product.images.length > 1 && (
+                        <TouchableOpacity
+                          style={styles.navButtonLeft}
+                          onPress={prevImage}
+                        >
+                          <AntDesign name="left" size={24} color="white" />
+                        </TouchableOpacity>
+                      )}
+                      {imageLoading && (
+                        <Text style={styles.loadingText}>Loading image...</Text>
+                      )}
+                      <Image
+                        source={{ uri: product.images[currentImageIndex] }}
+                        style={styles.productImage}
+                        resizeMode="contain"
+                        onLoad={() => setImageLoading(false)}
+                        onError={() => {
+                          setImageLoading(false);
+                          setError("Failed to load image");
+                        }}
                       />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <Text style={styles.ratingText}>{product.rating}/5</Text>
-              </View>
+                      {product.images.length > 1 && (
+                        <TouchableOpacity
+                          style={styles.navButtonRight}
+                          onPress={nextImage}
+                        >
+                          <AntDesign name="right" size={24} color="white" />
+                        </TouchableOpacity>
+                      )}
+                      <Text style={styles.imageCounter}>
+                        {currentImageIndex + 1}/{product.images.length}
+                      </Text>
+                    </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Kategori:</Text>
-                <Text style={styles.detailValue}>{product.category}</Text>
-              </View>
+                    {/* Product Info */}
+                    <View style={styles.infoContainer}>
+                      <Text style={styles.productName}>{product.name}</Text>
+                      <Text style={styles.productPrice}>{product.price}</Text>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Berat:</Text>
-                <Text style={styles.detailValue}>{product.berat} gram</Text>
-              </View>
+                      <View style={styles.ratingContainer}>
+                        <Text style={styles.sectionTitle}>Rating Produk:</Text>
+                        <View style={styles.starsContainer}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <TouchableOpacity
+                              key={star}
+                              onPress={() => handleRate(star)}
+                            >
+                              <AntDesign
+                                name={star <= product.rating ? "star" : "staro"}
+                                size={24}
+                                color={
+                                  star <= product.rating ? "#FFD700" : "#CCCCCC"
+                                }
+                              />
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                        <Text style={styles.ratingText}>
+                          {product.rating}/5
+                        </Text>
+                      </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Garansi:</Text>
-                <Text style={styles.detailValue}>{product.garansi}</Text>
-              </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Kategori:</Text>
+                        <Text style={styles.detailValue}>
+                          {product.category}
+                        </Text>
+                      </View>
 
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Deskripsi Produk</Text>
-                <Text style={styles.productDescription}>
-                  {product.deskripsi}
-                </Text>
-              </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Berat:</Text>
+                        <Text style={styles.detailValue}>
+                          {product.berat} gram
+                        </Text>
+                      </View>
 
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Penitip</Text>
-                <View style={styles.penitipContainer}>
-                  <Text style={styles.penitipName}>{product.penitip_name}</Text>
-                  <Text style={styles.penitipSince}>
-                    Bergabung sejak {product.penitip_since}
-                  </Text>
-                  <View style={styles.penitipRatingContainer}>
-                    <AntDesign name="star" size={16} color="#FFD700" />
-                    <Text style={styles.penitipRating}>
-                      {product.penitip_rating.toFixed(1)}/5
-                    </Text>
-                  </View>
-                </View>
-              </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Garansi:</Text>
+                        <View style={styles.garansiContainer}>
+                          <Text style={styles.detailValue}>
+                            {product.garansi}
+                          </Text>
+                          {product.garansi && product.garansi !== "-" && (
+                            <AntDesign
+                              name="Safety"
+                              size={16}
+                              color="#2E7D32"
+                              style={styles.garansiIcon}
+                            />
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>
+                          Deskripsi Produk
+                        </Text>
+                        <Text style={styles.productDescription}>
+                          {product.deskripsi}
+                        </Text>
+                      </View>
+
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Penitip</Text>
+                        <View style={styles.penitipContainer}>
+                          <Text style={styles.penitipName}>
+                            {product.penitip_name}
+                          </Text>
+                          <Text style={styles.penitipSince}>
+                            Bergabung sejak {product.penitip_since}
+                          </Text>
+                          <View style={styles.penitipRatingContainer}>
+                            <AntDesign name="star" size={16} color="#FFD700" />
+                            <Text style={styles.penitipRating}>
+                              {product.penitip_rating.toFixed(1)}/5
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  </>
+                )}
+              </ScrollView>
             </View>
-          </>
-        )}
-      </ScrollView>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: width * 0.9,
+    maxHeight: height * 0.8,
     backgroundColor: "#FFF7E2",
+    borderRadius: 10,
+    overflow: "hidden",
   },
   closeButton: {
     position: "absolute",
@@ -325,6 +386,14 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 16,
     flex: 1,
+  },
+  garansiContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  garansiIcon: {
+    marginLeft: 8,
   },
   penitipContainer: {
     backgroundColor: "#E8F5E9",

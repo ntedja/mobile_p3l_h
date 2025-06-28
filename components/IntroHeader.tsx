@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from "react-native";
-import NotificationIcon from "./NotificationIcon";
 
 export type BadgeInfo = {
   name: string;
@@ -33,11 +32,6 @@ export default function IntroHeader({
           </View>
         )}
       </View>
-
-      <NotificationIcon
-        count={notificationCount}
-        onPress={onNotificationPress}
-      />
     </View>
   );
 }

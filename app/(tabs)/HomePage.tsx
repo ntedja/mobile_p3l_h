@@ -14,7 +14,6 @@ import IntroHeader, { BadgeInfo } from "../../components/IntroHeader";
 import ProductDetailModal from "../../components/ProductDetailModal";
 import ProductGrid from "../../components/ProductGrid";
 import Colors from "../../services/Colors";
-import NotificationScreen from "./NotificationScreen";
 
 type RootStackParamList = {
   Home: undefined;
@@ -74,12 +73,12 @@ export default function HomePage() {
         })
         .catch((err) => console.error("Fetch produk error:", err));
 
-      axios
-        .get<{ count: number }>(`${API_BASE_URL}/notifications/unread-count`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        })
-        .then((res) => setNotificationCount(res.data.count))
-        .catch((err) => console.error("Fetch notifikasi error:", err));
+      // axios
+      //   .get<{ count: number }>(`${API_BASE_URL}/notifications/unread-count`, {
+      //     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      //   })
+      //   .then((res) => setNotificationCount(res.data.count))
+      //   .catch((err) => console.error("Fetch notifikasi error:", err));
 
       axios
         .get<{ success: boolean; data: TopSeller[] }>(
@@ -208,19 +207,6 @@ export default function HomePage() {
         onRateProduct={handleRateProduct}
       />
     </>
-  );
-}
-
-export function HomeStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home" component={HomePage} />
-      <Stack.Screen
-        name="Notifications"
-        component={NotificationScreen}
-        options={{ headerShown: true, title: "Notifikasi" }}
-      />
-    </Stack.Navigator>
   );
 }
 

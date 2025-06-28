@@ -80,7 +80,9 @@ export default function CategoryList({
         <TouchableOpacity
           key={index}
           style={[styles.category, selected === cat.slug && styles.active]}
-          onPress={() => setSelected(cat.slug)}
+          onPress={() => {
+            setSelected(selected === cat.slug ? "recent" : cat.slug);
+          }}
         >
           <Text style={styles.label}>{cat.label}</Text>
         </TouchableOpacity>

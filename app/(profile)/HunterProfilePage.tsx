@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   View,
+  RefreshControl,
 } from "react-native";
 import { Card } from "react-native-paper";
 import {
@@ -23,18 +24,22 @@ export default function HunterProfilePage() {
   const [profile, setProfile] = useState<HunterProfile | null>(null);
   const [komisiList, setKomisiList] = useState<KomisiDetail[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [selectedKomisi, setSelectedKomisi] = useState<KomisiDetail | null>(
     null
   );
 
   useEffect(() => {
-    loadProfile();
-    loadKomisi();
+    loadData();
   }, []);
 
+  const loadData = async () => {
+    await loadProfile();
+    await loadKomisi();
+  };
+
   const loadProfile = async () => {
-    setLoading(true);
     try {
       const idString = await AsyncStorage.getItem("pegawai_id");
       if (!idString) throw new Error("ID pegawai tidak ditemukan");
@@ -45,8 +50,6 @@ export default function HunterProfilePage() {
     } catch (err: any) {
       console.error(err);
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -58,13 +61,30 @@ export default function HunterProfilePage() {
       const id = parseInt(idString, 10);
 
       const komisiData = await fetchHunterKomisi(id);
-      setKomisiList(komisiData);
+      // Format data komisi
+      const formattedKomisi = komisiData.map((item: any) => ({
+        ID_KOMISI: item.ID_KOMISI,
+        JENIS_KOMISI: item.JENIS_KOMISI || "Komisi Transaksi",
+        NOMINAL_KOMISI: item.NOMINAL_KOMISI,
+        ID_TRANSAKSI_PEMBELIAN: item.ID_TRANSAKSI_PEMBELIAN || "N/A",
+        created_at: item.created_at
+          ? new Date(item.created_at).toISOString()
+          : new Date().toISOString(),
+        STATUS_BARANG: item.transaksiPembelian?.STATUS_BARANG || "Unknown",
+      }));
+      setKomisiList(formattedKomisi);
     } catch (err: any) {
       console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
   };
 
   const renderKomisi = ({ item }: { item: KomisiDetail }) => (
@@ -73,11 +93,27 @@ export default function HunterProfilePage() {
         <Card.Content>
           <Text style={styles.kode}>ID Komisi: {item.ID_KOMISI}</Text>
           <Text>Jenis: {item.JENIS_KOMISI}</Text>
-          <Text>Nominal: Rp{item.NOMINAL_KOMISI.toLocaleString()}</Text>
+          <Text>Nominal: Rp{item.NOMINAL_KOMISI.toLocaleString("id-ID")}</Text>
+          <Text>Status: {item.STATUS_BARANG}</Text>
         </Card.Content>
       </Card>
     </Pressable>
   );
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (e) {
+      return "Tanggal tidak valid";
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -85,7 +121,7 @@ export default function HunterProfilePage() {
         <Text style={styles.headerTitle}>Profil Hunter</Text>
       </View>
 
-      {loading ? (
+      {loading && !refreshing ? (
         <ActivityIndicator
           size="large"
           color={Colors.BUTTON_PRIMARY}
@@ -100,8 +136,12 @@ export default function HunterProfilePage() {
               <>
                 <Text style={styles.name}>{profile.NAMA_PEGAWAI}</Text>
                 <Text style={styles.email}>{profile.EMAIL_PEGAWAI}</Text>
+                <Text style={styles.phone}>
+                  No. Telp: {profile.NO_TELP_PEGAWAI}
+                </Text>
                 <Text style={styles.komisi}>
-                  Total Komisi: Rp{profile.KOMISI_PEGAWAI.toLocaleString()}
+                  Total Komisi: Rp
+                  {profile.KOMISI_PEGAWAI.toLocaleString("id-ID")}
                 </Text>
               </>
             ) : (
@@ -115,6 +155,16 @@ export default function HunterProfilePage() {
             keyExtractor={(item) => item.ID_KOMISI.toString()}
             renderItem={renderKomisi}
             contentContainerStyle={{ paddingBottom: 80, marginTop: 12 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.BUTTON_PRIMARY]}
+              />
+            }
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>Belum ada riwayat komisi</Text>
+            }
           />
 
           {/* Modal detail */}
@@ -129,20 +179,43 @@ export default function HunterProfilePage() {
                 {selectedKomisi && (
                   <>
                     <Text style={styles.modalTitle}>Detail Komisi</Text>
-                    <Text>ID: {selectedKomisi.ID_KOMISI}</Text>
-                    <Text>Jenis: {selectedKomisi.JENIS_KOMISI}</Text>
-                    <Text>
-                      Nominal: Rp
-                      {selectedKomisi.NOMINAL_KOMISI.toLocaleString()}
-                    </Text>
-                    <Text>
-                      Transaksi Pembelian ID:{" "}
-                      {selectedKomisi.ID_TRANSAKSI_PEMBELIAN}
-                    </Text>
-                    <Text>
-                      Tanggal:{" "}
-                      {new Date(selectedKomisi.created_at).toLocaleDateString()}
-                    </Text>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>ID Komisi:</Text>
+                      <Text style={styles.detailValue}>
+                        {selectedKomisi.ID_KOMISI}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Jenis:</Text>
+                      <Text style={styles.detailValue}>
+                        {selectedKomisi.JENIS_KOMISI}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Nominal:</Text>
+                      <Text style={styles.detailValue}>
+                        Rp
+                        {selectedKomisi.NOMINAL_KOMISI.toLocaleString("id-ID")}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>ID Transaksi:</Text>
+                      <Text style={styles.detailValue}>
+                        {selectedKomisi.ID_TRANSAKSI_PEMBELIAN}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Status:</Text>
+                      <Text style={styles.detailValue}>
+                        {selectedKomisi.STATUS_BARANG}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Tanggal:</Text>
+                      <Text style={styles.detailValue}>
+                        {formatDate(selectedKomisi.created_at)}
+                      </Text>
+                    </View>
                     <Pressable
                       style={styles.button}
                       onPress={() => setSelectedKomisi(null)}
@@ -178,7 +251,13 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 18, fontWeight: "700", color: Colors.TEXT_DARK },
   email: { fontSize: 14, color: Colors.GRAY, marginTop: 4 },
-  komisi: { fontSize: 16, fontWeight: "600", marginTop: 8 },
+  phone: { fontSize: 14, color: Colors.GRAY, marginTop: 4 },
+  komisi: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 8,
+    color: Colors.SUCCESS,
+  },
   subHeader: {
     fontSize: 16,
     fontWeight: "600",
@@ -194,8 +273,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
   },
-  kode: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK }, // 🔥 Tambahkan ini
-  error: { color: "red", textAlign: "center", marginTop: 20 },
+  kode: { fontSize: 16, fontWeight: "600", color: Colors.TEXT_DARK },
+  error: { color: Colors.DANGER, textAlign: "center", marginTop: 20 },
+  emptyText: { textAlign: "center", marginTop: 20, color: Colors.GRAY },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -206,16 +286,41 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.WHITE,
     padding: 20,
     borderRadius: 12,
-    width: "80%",
+    width: "90%",
     elevation: 5,
   },
-  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 16,
+    color: Colors.TEXT_DARK,
+    textAlign: "center",
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontWeight: "600",
+    color: Colors.TEXT_DARK,
+    width: "40%",
+  },
+  detailValue: {
+    flex: 1,
+    color: Colors.TEXT_DARK,
+    textAlign: "right",
+  },
   button: {
-    marginTop: 16,
+    marginTop: 20,
     backgroundColor: Colors.BUTTON_PRIMARY,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 6,
     alignItems: "center",
   },
-  buttonText: { color: Colors.WHITE, fontWeight: "600" },
+  buttonText: {
+    color: Colors.WHITE,
+    fontWeight: "600",
+    fontSize: 16,
+  },
 });
