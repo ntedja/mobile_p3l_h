@@ -47,6 +47,7 @@ export type KomisiDetail = {
   NOMINAL_KOMISI: number;
   ID_TRANSAKSI_PEMBELIAN: number;
   created_at: string;
+  STATUS_BARANG?: string;
 };
 
 // ✅ Ambil profil hunter berdasarkan ID
