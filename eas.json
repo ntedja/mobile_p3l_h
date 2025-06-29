@@ -1,5 +1,14 @@
 {
   "build": {
+    "production": {
+      "env": {
+        "API_BASE_URL": "https://dashboard.reusemart.site/api",
+        "NODE_ENV": "production"
+      }
+    },
+    "my-profile": {
+      "env": {}
+    },
     "preview": {
       "android": {
         "buildType": "apk"
@@ -8,7 +17,6 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal"
-    },
-    "production": {}
+    }
   }
 }
