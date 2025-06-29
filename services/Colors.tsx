@@ -20,4 +20,6 @@ export default {
   // Warna dot indicator
   DOT_INACTIVE: "#E0E0E0",
   DOT_ACTIVE: "#3E5B50",
+  SUCCESS: "#28a745",
+  DANGER: "#dc3545",
 };
