@@ -123,7 +123,8 @@ export default function KurirProfilePage() {
             try {
               await updateStatusPengiriman(id);
               Alert.alert("Sukses", "Status pengiriman berhasil diperbarui.");
-              loadTugas();
+              loadTugas(); // Muat ulang daftar tugas aktif
+              loadTugasSelesai(); // Muat ulang riwayat tugas yang sudah selesai
             } catch (err) {
               Alert.alert("Gagal", "Gagal memperbarui status pengiriman.");
             }
