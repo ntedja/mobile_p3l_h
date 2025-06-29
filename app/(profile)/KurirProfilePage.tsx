@@ -15,6 +15,8 @@ import {
   fetchKurirHistory,
   fetchKurirHistorySelesai,
   fetchKurirProfile,
+  KurirProfile,
+  TugasPengiriman,
   updateStatusPengiriman,
 } from "../../api/kurirApi";
 import Colors from "../../services/Colors";
