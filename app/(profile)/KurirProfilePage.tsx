@@ -9,12 +9,15 @@ import {
   StyleSheet,
   Text,
   View,
+  RefreshControl,
 } from "react-native";
 import { Card, Divider } from "react-native-paper";
 import {
   fetchKurirHistory,
   fetchKurirHistorySelesai,
   fetchKurirProfile,
+  KurirProfile,
+  TugasPengiriman,
   updateStatusPengiriman,
 } from "../../api/kurirApi";
 import Colors from "../../services/Colors";
@@ -23,27 +26,52 @@ export default function KurirProfilePage() {
   const [profile, setProfile] = useState<KurirProfile | null>(null);
   const [tugas, setTugas] = useState<TugasPengiriman[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [tugasSelesai, setTugasSelesai] = useState<TugasPengiriman[]>([]);
 
   useEffect(() => {
+    console.log("Mounting KurirProfilePage");
+    const init = async () => {
+      const id = await AsyncStorage.getItem("pegawai_id");
+      console.log("Stored pegawai_id:", id);
+    };
+    init();
+
     loadProfile();
     loadTugas();
     loadTugasSelesai();
+  }, []);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await loadProfile();
+    await loadTugas();
+    await loadTugasSelesai();
+    setRefreshing(false);
   }, []);
 
   const loadProfile = async () => {
     setLoading(true);
     try {
       const idKurirString = await AsyncStorage.getItem("pegawai_id");
-      if (!idKurirString) throw new Error("ID pegawai tidak ditemukan");
+      if (!idKurirString) {
+        throw new Error("ID pegawai tidak ditemukan di penyimpanan lokal");
+      }
+
       const idKurir = parseInt(idKurirString, 10);
+      if (isNaN(idKurir)) {
+        throw new Error("ID pegawai tidak valid");
+      }
 
       const profileData = await fetchKurirProfile(idKurir);
+      console.log("Profile data:", profileData); // Debug log
       setProfile(profileData);
+      setError("");
     } catch (err: any) {
-      console.error(err);
-      setError(err.message);
+      console.error("Error loading profile:", err);
+      setError(err.message || "Gagal memuat profil");
+      Alert.alert("Error", err.message || "Gagal memuat profil");
     } finally {
       setLoading(false);
     }
@@ -55,11 +83,11 @@ export default function KurirProfilePage() {
       const idKurirString = await AsyncStorage.getItem("pegawai_id");
       if (!idKurirString) throw new Error("ID pegawai tidak ditemukan");
       const idKurir = parseInt(idKurirString, 10);
-
-      const tugasData = await fetchKurirHistory(idKurir); // Dikirim
+      console.log("Fetching tasks for ID:", idKurir); // Debug log
+      const tugasData = await fetchKurirHistory(idKurir);
       setTugas(tugasData);
     } catch (err: any) {
-      console.error(err);
+      console.error("Error fetching tasks:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -168,6 +196,9 @@ export default function KurirProfilePage() {
 
           <Text style={styles.subHeader}>Daftar Tugas Pengiriman</Text>
           <FlatList
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
             data={tugas}
             keyExtractor={(item) => item.ID_TRANSAKSI_PEMBELIAN.toString()}
             renderItem={renderTugas}
@@ -176,6 +207,9 @@ export default function KurirProfilePage() {
 
           <Text style={styles.subHeader}>History Tugas Pengiriman</Text>
           <FlatList
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
             data={tugasSelesai}
             keyExtractor={(item) => item.ID_TRANSAKSI_PEMBELIAN.toString()}
             renderItem={({ item }) => (

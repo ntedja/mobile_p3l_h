@@ -5,11 +5,11 @@ import {
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
-  RefreshControl,
 } from "react-native";
 import { Card } from "react-native-paper";
 import {
@@ -35,46 +35,33 @@ export default function HunterProfilePage() {
   }, []);
 
   const loadData = async () => {
-    await loadProfile();
-    await loadKomisi();
-  };
-
-  const loadProfile = async () => {
-    try {
-      const idString = await AsyncStorage.getItem("pegawai_id");
-      if (!idString) throw new Error("ID pegawai tidak ditemukan");
-      const id = parseInt(idString, 10);
-
-      const profileData = await fetchHunterProfile(id);
-      setProfile(profileData);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
-    }
-  };
-
-  const loadKomisi = async () => {
     setLoading(true);
     try {
       const idString = await AsyncStorage.getItem("pegawai_id");
       if (!idString) throw new Error("ID pegawai tidak ditemukan");
       const id = parseInt(idString, 10);
 
-      const komisiData = await fetchHunterKomisi(id);
-      // Format data komisi
-      const formattedKomisi = komisiData.map((item: any) => ({
+      const [profileData, komisiData] = await Promise.all([
+        fetchHunterProfile(id),
+        fetchHunterKomisi(id),
+      ]);
+
+      setProfile(profileData);
+
+      const formattedKomisi = komisiData.map((item: KomisiDetail) => ({
         ID_KOMISI: item.ID_KOMISI,
         JENIS_KOMISI: item.JENIS_KOMISI || "Komisi Transaksi",
         NOMINAL_KOMISI: item.NOMINAL_KOMISI,
         ID_TRANSAKSI_PEMBELIAN: item.ID_TRANSAKSI_PEMBELIAN || "N/A",
-        created_at: item.created_at
-          ? new Date(item.created_at).toISOString()
-          : new Date().toISOString(),
-        STATUS_BARANG: item.transaksiPembelian?.STATUS_BARANG || "Unknown",
+        created_at: item.created_at || new Date().toISOString(),
+        transaksiPembelian: {
+          STATUS_BARANG: item.transaksiPembelian?.STATUS_BARANG || "Unknown",
+        },
       }));
+
       setKomisiList(formattedKomisi);
     } catch (err: any) {
-      console.error(err);
+      console.error("Error loading data:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -94,7 +81,10 @@ export default function HunterProfilePage() {
           <Text style={styles.kode}>ID Komisi: {item.ID_KOMISI}</Text>
           <Text>Jenis: {item.JENIS_KOMISI}</Text>
           <Text>Nominal: Rp{item.NOMINAL_KOMISI.toLocaleString("id-ID")}</Text>
-          <Text>Status: {item.STATUS_BARANG}</Text>
+          <Text>ID Transaksi: {item.ID_TRANSAKSI_PEMBELIAN}</Text>
+          <Text>
+            Status: {item.transaksiPembelian?.STATUS_BARANG || "Unknown"}
+          </Text>
         </Card.Content>
       </Card>
     </Pressable>
@@ -207,7 +197,8 @@ export default function HunterProfilePage() {
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Status:</Text>
                       <Text style={styles.detailValue}>
-                        {selectedKomisi.STATUS_BARANG}
+                        {selectedKomisi.transaksiPembelian?.STATUS_BARANG ||
+                          "Unknown"}
                       </Text>
                     </View>
                     <View style={styles.detailRow}>

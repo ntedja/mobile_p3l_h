@@ -3,6 +3,7 @@
 import axios from "axios";
 import { getToken } from "./apiAuth";
 
+// const API_BASE_URL = "http://192.168.0.1013232:8000/api";
 const API_BASE_URL = "https://dashboard.reusemart.site/api";
 
 const kurirApi = axios.create({
@@ -32,6 +33,9 @@ export type KurirProfile = {
   jabatans: {
     NAMA_JABATAN: string;
   };
+  // Add other fields that might come from backend
+  PROFILE_PEGAWAI?: string;
+  TGL_LAHIR_PEGAWAI?: string;
 };
 
 // ✅ Tugas pengiriman (schema sesuai backend)
@@ -61,7 +65,18 @@ export async function fetchKurirHistory(
 
 // ✅ Update status pengiriman
 export async function updateStatusPengiriman(id: number): Promise<void> {
-  await kurirApi.patch(`/pegawai/tugas/${id}/selesai`);
+  try {
+    const response = await kurirApi.patch(`/pegawai/tugas/${id}/selesai`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error("API Error:", error.response?.data);
+      throw new Error(
+        error.response?.data?.message || "Failed to update status"
+      );
+    }
+    throw error;
+  }
 }
 
 // ✅ Fetch daftar tugas yang sudah selesai
