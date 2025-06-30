@@ -69,7 +69,7 @@ export async function updateStatusPengiriman(id: number): Promise<void> {
     // const response = await kurirApi.patch(`/pegawai/tugas/${id}/selesai`);
     // Mengubah metode dari PATCH ke POST. Error HTML yang muncul mengindikasikan
     // kemungkinan backend tidak menangani metode PATCH untuk rute ini.
-    const response = await kurirApi.post(`/pegawai/tugas/${id}/selesai`);
+    const response = await kurirApi.patch(`/pegawai/tugas/${id}/selesai`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {

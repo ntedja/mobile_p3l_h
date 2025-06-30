@@ -7,11 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "p3lreactnative",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.dashboard.reusemart.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -42,7 +43,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "7796e037-4d6d-433f-adf4-4551aa23cdb7"
+        "projectId": "806f8f62-8263-45b4-948a-90fa189ecb43"
       }
     }
   }
