@@ -1,0 +1,22 @@
+{
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "API_BASE_URL": "https://dashboard.reusemart.site/api",
+        "NODE_ENV": "production"
+      }
+    },
+    "my-profile": {
+      "env": {}
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
